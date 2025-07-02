@@ -19,16 +19,22 @@ const httpsAgent = new https.Agent({
   timeout: 30_000, // close even hung sockets quickly
 });
 
-const s3 = new S3Client({
-  region: "auto",
-  endpoint: process.env.R2_ENDPOINT,
-  forcePathStyle: true,
-  credentials: {
-    accessKeyId: process.env.R2_KEY_ID as string,
-    secretAccessKey: process.env.R2_SECRET as string,
-  },
-  requestHandler: new NodeHttpHandler({ httpsAgent }),
-});
+// We build the S3 client *inside* each upload so that every invocation gets a
+// brand-new TLS connection.  This completely rules out problems caused by
+// stale sockets that survive between warm invocations of the Serverless
+// Function.
+function createS3Client() {
+  return new S3Client({
+    region: "auto",
+    endpoint: process.env.R2_ENDPOINT,
+    forcePathStyle: true,
+    credentials: {
+      accessKeyId: process.env.R2_KEY_ID as string,
+      secretAccessKey: process.env.R2_SECRET as string,
+    },
+    requestHandler: new NodeHttpHandler({ httpsAgent }),
+  });
+}
 
 /**
  * Загружает изображение в R2 и возвращает публичный URL.
@@ -40,6 +46,8 @@ export async function uploadImage(buffer: Buffer, mime = "image/jpeg"): Promise<
 
   const key = crypto.randomUUID();
 
+  const s3 = createS3Client();
+
   await s3.send(
     new PutObjectCommand({
       Bucket: process.env.R2_BUCKET,
@@ -48,6 +56,10 @@ export async function uploadImage(buffer: Buffer, mime = "image/jpeg"): Promise<
       ContentType: mime,
     })
   );
+
+  // Explicitly close all sockets opened by the client so that nothing leaks
+  // into the next invocation.
+  s3.destroy();
 
   return `${process.env.R2_ENDPOINT}/${process.env.R2_BUCKET}/${key}`;
 } 
