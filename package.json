@@ -1,0 +1,19 @@
+{
+  "name": "lumina-share",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Vercel builds functions automatically'",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.550.0",
+    "formidable": "^3.8.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@vercel/node": "^3.6.6"
+  }
+} 
