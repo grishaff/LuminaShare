@@ -3,11 +3,21 @@ import { NodeHttpHandler } from "@smithy/node-http-handler";
 import https from "https";
 import crypto from "crypto";
 
-// Disable socket keep-alive to avoid TLS handshake failures that occur when a
-// warm Vercel Serverless Function re-uses a stale TLS connection. We create a
-// minimal HTTPS agent without keep-alive and pass it via a custom request
-// handler.
-const httpsAgent = new https.Agent({ keepAlive: false });
+// Cloudflare closes idle TLS connections after ~5-6 minutes. In a warm
+// Vercel Serverless Function the Node.js process survives between
+// invocations, so an old socket can stay in `freeSockets` and be reused by
+// the AWS client even when `keepAlive` is false.  Re-using that half-closed
+// socket triggers the `EPROTO ssl3_read_bytes:ssl/tls alert handshake
+// failure` error we keep seeing.
+//
+// Setting `maxFreeSockets: 0` makes Node destroy sockets instead of caching
+// them, *guaranteeing* that each call opens a fresh TLS connection.  We also
+// turn off `keepAlive` and add a 30-second timeout just to be extra safe.
+const httpsAgent = new https.Agent({
+  keepAlive: false,
+  maxFreeSockets: 0,
+  timeout: 30_000, // close even hung sockets quickly
+});
 
 const s3 = new S3Client({
   region: "auto",
