@@ -9,5 +9,5 @@
     "skipLibCheck": true,
     "outDir": "dist"
   },
-  "include": ["api/**/*.ts"]
+  "include": ["api/**/*.ts", "types/**/*.d.ts"]
 } 
