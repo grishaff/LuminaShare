@@ -1,1 +1,30 @@
-<!DOCTYPE html><html><body><h1>LuminaShare – скоро здесь будет добро!</h1></body></html>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>LuminaShare</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body{font-family:sans-serif;margin:0;padding:20px;background:#f5f5f5}
+    #root{max-width:500px;margin:0 auto}
+    button{padding:10px 16px;font-size:16px}
+  </style>
+</head>
+<body>
+  <div id="root">
+    <h1>LuminaShare</h1>
+    <p>Это стартовая страница Mini App.</p>
+    <button id="ping">Показать user ID</button>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();      // сообщаем Telegram, что приложение готово
+    tg.expand();     // разворачиваем на весь экран
+
+    document.getElementById('ping').onclick = () => {
+      alert('Ваш user_id: ' + tg.initDataUnsafe.user.id);
+    };
+  </script>
+</body>
+</html>
