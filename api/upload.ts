@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import formidable from "formidable";
+import formidable, { File, Fields, Files } from "formidable";
 import fs from "fs/promises";
 import { uploadImage } from "./uploadImage";
 
@@ -18,18 +18,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const form = formidable({ maxFileSize: 5 * 1024 * 1024 }); // 5 MB
     const { fields, files } = await new Promise<{
-      fields: formidable.Fields;
-      files: formidable.Files;
+      fields: Fields;
+      files: Files;
     }>((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
+      form.parse(req, (err: any, fields: Fields, files: Files) => {
         if (err) reject(err);
         else resolve({ fields, files });
       });
     });
 
-    // Поддерживаем только 1 файл с именем "image"
-    const file = files.image as formidable.File | undefined;
-    if (!file) return res.status(400).json({ error: "No image field provided" });
+    // "files.image" может быть File или File[] (formidable v3)
+    const entry = files.image as File | File[] | undefined;
+    if (!entry) {
+      return res.status(400).json({ error: "No image field provided" });
+    }
+
+    const file: File = Array.isArray(entry) ? entry[0] : entry;
+    if (!file.filepath) {
+      return res.status(500).json({ error: "Filepath missing" });
+    }
 
     const buffer = await fs.readFile(file.filepath);
     const imageUrl = await uploadImage(buffer, file.mimetype || "image/jpeg");
