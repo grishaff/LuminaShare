@@ -1,7 +1,14 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { NodeHttpHandler } from "@aws-sdk/node-http-handler";
+import https from "https";
 import crypto from "crypto";
 
-// Lazy singleton instance
+// Disable socket keep-alive to avoid TLS handshake failures that occur when a
+// warm Vercel Serverless Function re-uses a stale TLS connection. We create a
+// minimal HTTPS agent without keep-alive and pass it via a custom request
+// handler.
+const httpsAgent = new https.Agent({ keepAlive: false });
+
 const s3 = new S3Client({
   region: "auto",
   endpoint: process.env.R2_ENDPOINT,
@@ -10,6 +17,7 @@ const s3 = new S3Client({
     accessKeyId: process.env.R2_KEY_ID as string,
     secretAccessKey: process.env.R2_SECRET as string,
   },
+  requestHandler: new NodeHttpHandler({ httpsAgent }),
 });
 
 /**
@@ -28,7 +36,6 @@ export async function uploadImage(buffer: Buffer, mime = "image/jpeg"): Promise<
       Key: key,
       Body: buffer,
       ContentType: mime,
-      ACL: "public-read",
     })
   );
 
