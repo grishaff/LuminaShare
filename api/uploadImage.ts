@@ -17,6 +17,8 @@ const httpsAgent = new https.Agent({
   keepAlive: false,
   maxFreeSockets: 0,
   timeout: 30_000, // close even hung sockets quickly
+  minVersion: "TLSv1.2",
+  maxVersion: "TLSv1.2", // Cloudflare occasionally aborts TLS 1.3 handshakes from Node
 });
 
 // We build the S3 client *inside* each upload so that every invocation gets a
