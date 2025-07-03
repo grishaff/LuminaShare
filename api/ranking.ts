@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // получаем данные пользователей отдельно
     const { data: users, error: usersError } = await supabase
       .from('users')
-      .select('tg_id, first_name, last_name, username, display_name');
+      .select('tg_id, display_name');
 
     if (usersError) {
       console.error('Users error:', usersError);
@@ -57,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else {
       rankings[donorId] = {
         donor_tg_id: donorId,
-        first_name: user?.first_name || user?.display_name || 'Аноним',
+        first_name: user?.display_name || 'Аноним',
         total_amount: amount,
         donation_count: 1
       };
