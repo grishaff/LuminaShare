@@ -29,36 +29,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // создаем карту пользователей для быстрого поиска
-  const userMap = new Map();
-  users?.forEach(user => {
-    userMap.set(user.tg_id, user);
+  const userMap: any = {};
+  users?.forEach((user: any) => {
+    userMap[user.tg_id] = user;
   });
 
   // Агрегируем данные по donor_tg_id
-  const rankings = new Map();
+  const rankings: any = {};
   
-  donations?.forEach(donation => {
+  donations?.forEach((donation: any) => {
     const donorId = donation.donor_tg_id;
     const amount = parseFloat(donation.amount_ton) || 0;
-    const user = userMap.get(donorId);
+    const user = userMap[donorId];
     
-    if (rankings.has(donorId)) {
-      const existing = rankings.get(donorId);
-      existing.total_amount += amount;
-      existing.donation_count += 1;
+    if (rankings[donorId]) {
+      rankings[donorId].total_amount += amount;
+      rankings[donorId].donation_count += 1;
     } else {
-      rankings.set(donorId, {
+      rankings[donorId] = {
         donor_tg_id: donorId,
         first_name: user?.first_name || user?.display_name || 'Аноним',
         total_amount: amount,
         donation_count: 1
-      });
+      };
     }
   });
 
   // Преобразуем в массив и сортируем по сумме
-  const rankingArray = Array.from(rankings.values())
-    .sort((a, b) => b.total_amount - a.total_amount)
+  const rankingArray = Object.values(rankings)
+    .sort((a: any, b: any) => b.total_amount - a.total_amount)
     .slice(0, 100);
 
   res.status(200).json({ ranking: rankingArray });
