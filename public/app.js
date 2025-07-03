@@ -695,7 +695,7 @@ async function loadProfile() {
   try {
     console.log("Loading profile for user:", userProfile.id);
     // Get user's announcements
-    const resp = await fetch(`/api/profile/${userProfile.id}`);
+    const resp = await fetch(`/api/profile?id=${userProfile.id}`);
     console.log("Profile fetch response:", resp.status);
     
     if (!resp.ok) {

@@ -146,7 +146,7 @@
         }
         
         try {
-          const resp = await fetch(`/api/profile/${userId}`);
+          const resp = await fetch(`/api/profile?id=${userId}`);
           
           if (!resp.ok) {
             throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
