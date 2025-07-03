@@ -134,33 +134,49 @@ async function loadInitialData() {
 
 // User profile management
 async function loadUserProfile() {
-  if (!user?.id) return;
+  if (!user?.id) {
+    console.log("No user ID available");
+    return;
+  }
   
   try {
+    console.log("Loading profile for user:", user.id);
+    
     // Try to get existing profile
     const resp = await fetch(`/api/users?tgId=${user.id}`);
+    console.log("Profile fetch response:", resp.status);
+    
     if (resp.ok) {
       const data = await resp.json();
       userProfile = data.profile;
+      console.log("Profile loaded:", userProfile);
       updateWalletStatus();
       return;
     }
     
     // Create new profile if doesn't exist
+    console.log("Creating new profile for user:", user);
     const createResp = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         tgId: user.id,
         role: "user",
-        displayName: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || `User ${user.id}`
+        displayName: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || `User ${user.id}`,
+        avatarUrl: user.photo_url
       })
     });
     
+    console.log("Create profile response:", createResp.status);
+    
     if (createResp.ok) {
       const data = await createResp.json();
-      userProfile = data.profile;
+      userProfile = data.user; // Исправлено: API возвращает 'user', а не 'profile'
+      console.log("Profile created:", userProfile);
       updateWalletStatus();
+    } else {
+      const errorData = await createResp.json();
+      console.error("Failed to create profile:", errorData);
     }
   } catch (err) {
     console.error("Error loading user profile:", err);
@@ -303,14 +319,19 @@ function initCreateForm() {
     }
   });
   
-  createForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    
-    // Check if user has wallet (future implementation)
-    if (!userProfile) {
-      alert("Сначала необходимо настроить профиль");
-      return;
-    }
+     createForm.addEventListener("submit", async (e) => {
+     e.preventDefault();
+     
+     // Check if user profile is loaded
+     if (!userProfile) {
+       if (tg) {
+         tg.showAlert("Профиль не загружен. Перейдите во вкладку 'Профиль' и попробуйте снова.");
+       } else {
+         alert("Профиль не загружен. Перейдите во вкладку 'Профиль' и попробуйте снова.");
+       }
+       switchTab('profile'); // Автоматически переключаемся на профиль
+       return;
+     }
     
     const formData = new FormData(createForm);
     const title = formData.get("title");
@@ -430,20 +451,55 @@ async function loadProfile() {
   
   if (!user?.id) {
     profileContent.innerHTML = `
-      <div class="text-center py-12">
+      <div class="glass-card rounded-2xl p-6 text-center">
         <div class="text-6xl mb-4">👤</div>
-        <p class="text-white text-lg">Профиль недоступен</p>
-        <p class="text-white/70">Запустите приложение в Telegram</p>
+        <p class="text-gray-700 text-lg">Профиль недоступен</p>
+        <p class="text-gray-500">Запустите приложение в Telegram</p>
       </div>`;
     return;
   }
   
   if (!userProfile) {
+    // Показываем индикатор загрузки
     profileContent.innerHTML = `
-      <div class="flex justify-center py-8">
-        <div class="loading w-6 h-6 bg-white rounded-full"></div>
+      <div class="glass-card rounded-2xl p-6 text-center">
+        <div class="flex justify-center mb-4">
+          <div class="loading w-8 h-8 bg-indigo-500 rounded-full"></div>
+        </div>
+        <p class="text-gray-700">Загрузка профиля...</p>
       </div>`;
-    return;
+    
+    // Попытаемся загрузить профиль еще раз
+    await loadUserProfile();
+    
+    if (!userProfile) {
+      profileContent.innerHTML = `
+        <div class="glass-card rounded-2xl p-6 text-center">
+          <div class="text-6xl mb-4">⚠️</div>
+          <p class="text-gray-700 text-lg mb-4">Не удалось загрузить профиль</p>
+          <p class="text-gray-500 text-sm mb-4">Проверьте консоль для деталей</p>
+          <button id="retryProfileBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors">
+            Попробовать снова
+          </button>
+        </div>`;
+      
+      // Добавляем обработчик для кнопки повторной попытки
+      const retryBtn = document.getElementById('retryProfileBtn');
+      if (retryBtn) {
+        retryBtn.addEventListener('click', async () => {
+          // Показываем загрузку при повторной попытке
+          profileContent.innerHTML = `
+            <div class="glass-card rounded-2xl p-6 text-center">
+              <div class="flex justify-center mb-4">
+                <div class="loading w-8 h-8 bg-indigo-500 rounded-full"></div>
+              </div>
+              <p class="text-gray-700">Повторная загрузка...</p>
+            </div>`;
+          await loadProfile();
+        });
+      }
+      return;
+    }
   }
   
   try {
