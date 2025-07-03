@@ -1,3 +1,5 @@
+import { VercelRequest, VercelResponse } from "@vercel/node";
+import formidable from "formidable";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { NodeHttpHandler } from "@smithy/node-http-handler";
 import https from "https";
@@ -64,4 +66,39 @@ export async function uploadImage(buffer: Buffer, mime = "image/jpeg"): Promise<
   s3.destroy();
 
   return `${process.env.R2_ENDPOINT}/${process.env.R2_BUCKET}/${key}`;
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    res.status(405).end("Method Not Allowed");
+    return;
+  }
+
+  try {
+    const form = formidable({
+      maxFileSize: 5 * 1024 * 1024, // 5MB max
+    });
+
+    const [fields, files] = await new Promise<[any, any]>((resolve, reject) => {
+      form.parse(req, (err, fields, files) => {
+        if (err) reject(err);
+        else resolve([fields, files]);
+      });
+    });
+
+    const file = Array.isArray(files.file) ? files.file[0] : files.file;
+
+    if (!file) {
+      res.status(400).json({ error: "No file uploaded" });
+      return;
+    }
+
+    const buffer = await require("fs").promises.readFile(file.filepath);
+    const url = await uploadImage(buffer, file.mimetype || "image/jpeg");
+
+    res.status(200).json({ ok: true, url });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 } 
