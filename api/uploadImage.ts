@@ -65,7 +65,9 @@ export async function uploadImage(buffer: Buffer, mime = "image/jpeg"): Promise<
   // into the next invocation.
   s3.destroy();
 
-  return `${process.env.R2_ENDPOINT}/${process.env.R2_BUCKET}/${key}`;
+  // Use public R2.dev URL instead of private endpoint
+  const publicDomain = process.env.R2_PUBLIC_URL;
+  return `${publicDomain}/${key}`;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
