@@ -2,6 +2,10 @@ import { VercelRequest, VercelResponse } from "@vercel/node";
 import { supabase } from "../utils/supabase";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Устанавливаем правильные заголовки
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'no-cache');
+  
   console.log(`[${req.method}] /api/users`, req.body || req.query);
 
   if (req.method === "GET") {
@@ -24,10 +28,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return;
       }
 
+      console.log("Successfully fetched user:", data);
       res.status(200).json({ profile: data });
     } catch (err) {
       console.error("Unexpected error (GET):", err);
-      res.status(500).json({ error: "Internal server error" });
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      res.status(500).json({ error: "Internal server error", details: errorMessage });
     }
     return;
   }

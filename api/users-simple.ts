@@ -2,6 +2,10 @@ import { VercelRequest, VercelResponse } from "@vercel/node";
 import { supabase } from "../utils/supabase";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Устанавливаем правильные заголовки
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'no-cache');
+  
   console.log(`[SIMPLE] [${req.method}] /api/users-simple`, req.body || req.query);
 
   if (req.method === "GET") {
@@ -50,15 +54,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       console.log("Creating simple user:", userData);
 
+      // Используем upsert вместо insert для избежания конфликтов
       const { data, error } = await supabase
         .from("users")
-        .insert(userData)
+        .upsert(userData, { onConflict: "tg_id", ignoreDuplicates: false })
         .select("id, tg_id, display_name, role, created_at")
         .single();
 
       if (error) {
-        console.error("Insert error:", error);
-        res.status(500).json({ error: error.message });
+        console.error("Upsert error:", error);
+        res.status(500).json({ error: error.message, details: error });
         return;
       }
 

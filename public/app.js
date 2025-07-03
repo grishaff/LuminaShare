@@ -144,14 +144,23 @@ async function loadUserProfile() {
     
     // Try to get existing profile
     const resp = await fetch(`/api/users?tgId=${user.id}`);
-    console.log("Profile fetch response:", resp.status);
+    console.log("Profile fetch response:", resp.status, resp.statusText);
     
     if (resp.ok) {
-      const data = await resp.json();
-      userProfile = data.profile;
-      console.log("Profile loaded:", userProfile);
-      updateWalletStatus();
-      return;
+      const responseText = await resp.text();
+      console.log("Response text:", responseText);
+      
+      try {
+        const data = JSON.parse(responseText);
+        userProfile = data.profile;
+        console.log("Profile loaded:", userProfile);
+        updateWalletStatus();
+        return;
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError);
+        console.error("Raw response:", responseText);
+        throw new Error(`Failed to parse response: ${parseError.message}`);
+      }
     }
     
     // Create new profile if doesn't exist
@@ -177,23 +186,40 @@ async function loadUserProfile() {
       body: JSON.stringify(userData)
     });
     
-    console.log("Create profile response:", createResp.status);
+    console.log("Create profile response:", createResp.status, createResp.statusText);
     
     if (createResp.ok) {
-      const data = await createResp.json();
-      userProfile = data.user; // Исправлено: API возвращает 'user', а не 'profile'
-      console.log("Profile created:", userProfile);
-      updateWalletStatus();
+      const responseText = await createResp.text();
+      console.log("Create response text:", responseText);
+      
+      try {
+        const data = JSON.parse(responseText);
+        userProfile = data.user; // Исправлено: API возвращает 'user', а не 'profile'
+        console.log("Profile created:", userProfile);
+        updateWalletStatus();
+      } catch (parseError) {
+        console.error("JSON parse error in create:", parseError);
+        console.error("Raw create response:", responseText);
+        throw new Error(`Failed to parse create response: ${parseError.message}`);
+      }
     } else {
-      const errorData = await createResp.json();
-      console.error("Failed to create profile:", createResp.status, errorData);
+      const errorText = await createResp.text();
+      console.error("Failed to create profile:", createResp.status, errorText);
+      
+      let errorMsg = "Неизвестная ошибка";
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMsg = errorData.error || errorMsg;
+      } catch {
+        errorMsg = `HTTP ${createResp.status}: ${errorText}`;
+      }
       
       // Показываем пользователю детали ошибки
-      const errorMsg = `Ошибка создания профиля: ${errorData.error || 'Неизвестная ошибка'}`;
+      const fullErrorMsg = `Ошибка создания профиля: ${errorMsg}`;
       if (tg) {
-        tg.showAlert(errorMsg);
+        tg.showAlert(fullErrorMsg);
       } else {
-        alert(errorMsg);
+        alert(fullErrorMsg);
       }
     }
   } catch (err) {
@@ -205,12 +231,22 @@ async function loadUserProfile() {
       
       // Пробуем получить профиль через простой API
       const simpleResp = await fetch(`/api/users-simple?tgId=${user.id}`);
+      console.log("Simple API GET response:", simpleResp.status, simpleResp.statusText);
+      
       if (simpleResp.ok) {
-        const data = await simpleResp.json();
-        userProfile = data.profile;
-        console.log("Profile loaded via simple API:", userProfile);
-        updateWalletStatus();
-        return;
+        const simpleText = await simpleResp.text();
+        console.log("Simple API response text:", simpleText);
+        
+        try {
+          const data = JSON.parse(simpleText);
+          userProfile = data.profile;
+          console.log("Profile loaded via simple API:", userProfile);
+          updateWalletStatus();
+          return;
+        } catch (parseError) {
+          console.error("Simple API JSON parse error:", parseError);
+          console.error("Simple API raw response:", simpleText);
+        }
       }
       
       // Пробуем создать через простой API
@@ -224,14 +260,31 @@ async function loadUserProfile() {
         })
       });
       
+      console.log("Simple API CREATE response:", createSimpleResp.status, createSimpleResp.statusText);
+      
       if (createSimpleResp.ok) {
-        const data = await createSimpleResp.json();
-        userProfile = data.user;
-        console.log("Profile created via simple API:", userProfile);
-        updateWalletStatus();
+        const createSimpleText = await createSimpleResp.text();
+        console.log("Simple API create response text:", createSimpleText);
+        
+        try {
+          const data = JSON.parse(createSimpleText);
+          userProfile = data.user;
+          console.log("Profile created via simple API:", userProfile);
+          updateWalletStatus();
+        } catch (parseError) {
+          console.error("Simple API create JSON parse error:", parseError);
+          console.error("Simple API create raw response:", createSimpleText);
+        }
       } else {
-        const errorData = await createSimpleResp.json();
-        console.error("Simple API also failed:", errorData);
+        const errorText = await createSimpleResp.text();
+        console.error("Simple API also failed:", createSimpleResp.status, errorText);
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          console.error("Simple API error details:", errorData);
+        } catch {
+          console.error("Simple API error (non-JSON):", errorText);
+        }
       }
       
     } catch (fallbackErr) {
@@ -539,6 +592,9 @@ async function loadProfile() {
             <button id="retryProfileBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors">
               Попробовать снова
             </button>
+            <button id="testApiBtn" class="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors">
+              Тест API
+            </button>
             <button id="debugBtn" class="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors">
               Проверить базу данных
             </button>
@@ -558,6 +614,52 @@ async function loadProfile() {
               <p class="text-gray-700">Повторная загрузка...</p>
             </div>`;
           await loadProfile();
+        });
+      }
+      
+      // Добавляем обработчик для test API кнопки
+      const testApiBtn = document.getElementById('testApiBtn');
+      if (testApiBtn) {
+        testApiBtn.addEventListener('click', async () => {
+          try {
+            console.log("Testing API...");
+            const resp = await fetch('/api/test');
+            const responseText = await resp.text();
+            console.log("Test API raw response:", responseText);
+            
+            try {
+              const testData = JSON.parse(responseText);
+              console.log("Test API data:", testData);
+              
+              if (testData.success) {
+                if (tg) {
+                  tg.showAlert("API работает корректно!");
+                } else {
+                  alert("API работает корректно!");
+                }
+              } else {
+                if (tg) {
+                  tg.showAlert("API возвращает ошибку - смотрите консоль");
+                } else {
+                  alert("API возвращает ошибку - смотрите консоль");
+                }
+              }
+            } catch (parseError) {
+              console.error("Test API JSON parse error:", parseError);
+              if (tg) {
+                tg.showAlert("API возвращает некорректный JSON");
+              } else {
+                alert("API возвращает некорректный JSON");
+              }
+            }
+          } catch (err) {
+            console.error("Test API fetch error:", err);
+            if (tg) {
+              tg.showAlert("Ошибка подключения к API");
+            } else {
+              alert("Ошибка подключения к API");
+            }
+          }
         });
       }
       
@@ -646,7 +748,24 @@ async function loadProfile() {
     }
     
   } catch (err) {
-    profileContent.innerHTML = `<p class="text-red-300 text-center py-8">Ошибка загрузки профиля: ${err}</p>`;
+    console.error("Error in loadProfile:", err);
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    profileContent.innerHTML = `
+      <div class="glass-card rounded-2xl p-6 text-center">
+        <div class="text-4xl mb-4">💥</div>
+        <p class="text-red-600 text-lg mb-4">Критическая ошибка</p>
+        <p class="text-gray-600 text-sm mb-4">${errorMessage}</p>
+        <button id="reloadPageBtn" class="px-4 py-2 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors">
+          Перезагрузить страницу
+        </button>
+      </div>`;
+    
+    const reloadBtn = document.getElementById('reloadPageBtn');
+    if (reloadBtn) {
+      reloadBtn.addEventListener('click', () => {
+        window.location.reload();
+      });
+    }
   }
 }
 
