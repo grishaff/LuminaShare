@@ -27,6 +27,30 @@
       <img id="viewerImg" class="max-w-full max-h-full rounded-lg shadow-2xl" />
     </div>
 
+    <!-- New announcement modal -->
+    <div id="newModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
+      <form id="newForm" class="bg-white rounded-2xl p-6 w-11/12 max-w-md space-y-4 shadow-xl">
+        <h3 class="text-lg font-semibold text-gray-900">Новое объявление</h3>
+
+        <input type="text" name="title" placeholder="Заголовок" required
+               class="w-full border border-gray-300 rounded-md px-3 py-2" />
+
+        <textarea name="description" rows="3" placeholder="Описание"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2"></textarea>
+
+        <input type="text" name="wallet" placeholder="TON кошелёк получателя" required
+               class="w-full border border-gray-300 rounded-md px-3 py-2" />
+
+        <input type="file" name="image" accept="image/*" required
+               class="w-full" />
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" id="cancelNew" class="px-4 py-2 text-sm rounded-md bg-gray-100">Отмена</button>
+          <button type="submit" class="px-4 py-2 text-sm rounded-md bg-indigo-600 text-white">Опубликовать</button>
+        </div>
+      </form>
+    </div>
+
     <script src="/app.js"></script>
   </body>
 </html>

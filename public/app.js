@@ -68,4 +68,65 @@ async function loadFeed() {
   }
 }
 
-loadFeed(); 
+loadFeed();
+
+// ===== Новое объявление =====
+const newBtn = document.getElementById("newBtn");
+const newModal = document.getElementById("newModal");
+const cancelNew = document.getElementById("cancelNew");
+const newForm = document.getElementById("newForm");
+
+newBtn.addEventListener("click", () => {
+  newModal.classList.remove("hidden");
+  newModal.classList.add("flex");
+});
+
+cancelNew.addEventListener("click", () => {
+  newModal.classList.add("hidden");
+  newModal.classList.remove("flex");
+  newForm.reset();
+});
+
+newForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(newForm);
+  const title = fd.get("title");
+  const description = fd.get("description");
+  const wallet = fd.get("wallet");
+  const imageFile = fd.get("image");
+
+  if (!imageFile || !(imageFile instanceof File)) return;
+
+  try {
+    // 1) upload image
+    const imgForm = new FormData();
+    imgForm.append("file", imageFile);
+    const upResp = await fetch("/api/upload", { method: "POST", body: imgForm });
+    const upJson = await upResp.json();
+    if (!upJson.ok) throw new Error("upload failed");
+    const imageUrl = upJson.url;
+
+    // 2) ensure recipientId in localStorage (simplified)
+    let recipientId = localStorage.getItem("recipientId");
+    if (!recipientId) {
+      recipientId = prompt("Введите UUID вашего профиля (recipientId)");
+      if (!recipientId) return;
+      localStorage.setItem("recipientId", recipientId);
+    }
+
+    // 3) create announcement
+    const annResp = await fetch("/api/announcements", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, description, imageUrl, recipientWallet: wallet, recipientId }),
+    });
+    const annJson = await annResp.json();
+    if (annResp.status !== 201) throw new Error(annJson.error || "Ошибка создания");
+
+    // 4) close modal and refresh feed
+    cancelNew.click();
+    loadFeed();
+  } catch (err) {
+    alert(err);
+  }
+}); 
