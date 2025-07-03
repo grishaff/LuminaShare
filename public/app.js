@@ -201,61 +201,86 @@ async function loadFeed() {
     
     feed.innerHTML = "";
     
-    announcements.forEach((item, index) => {
-      const card = document.createElement("article");
-      card.className = "glass-card rounded-2xl overflow-hidden shadow-lg mb-4 transition-all hover:shadow-xl hover:scale-[1.02] slide-up";
-      card.style.animationDelay = `${index * 0.1}s`;
+         announcements.forEach((item, index) => {
+       const card = document.createElement("article");
+       card.className = "glass-card rounded-2xl shadow-lg mb-4 transition-all hover:shadow-xl hover:-translate-y-1 slide-up overflow-hidden";
+       card.style.animationDelay = `${index * 0.1}s`;
 
-      card.innerHTML = `
-        <div class="relative group">
-          <img src="${item.image_url}" alt="${item.title}" class="w-full h-48 object-cover cursor-zoom-in" />
-          <div class="absolute top-3 right-3">
-            <span class="bg-black/50 text-white px-2 py-1 rounded-full text-xs">
-              ${new Date(item.created_at).toLocaleDateString('ru-RU')}
-            </span>
-          </div>
-        </div>
-        <div class="p-6">
-          <h2 class="text-xl font-bold text-gray-900 mb-2">${item.title}</h2>
-          ${item.description ? `<p class="text-gray-700 mb-4 line-clamp-3">${item.description}</p>` : ""}
-          <div class="flex items-center justify-between">
-            <button class="author-btn text-sm text-indigo-600 hover:text-indigo-800 font-medium" data-recipient-id="${item.recipient_id}">
-              👤 Посмотреть автора
-            </button>
-            <button class="donate-btn bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg font-semibold hover:shadow-lg transition-all" 
-                    data-announcement='${JSON.stringify(item)}'>
-              💎 Поддержать
-            </button>
-          </div>
-        </div>`;
+       // Truncate description for preview
+       const shortDescription = item.description ? 
+         (item.description.length > 80 ? item.description.substring(0, 80) + '...' : item.description) : '';
 
-      // Image click to open viewer
-      const img = card.querySelector("img");
-      img.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const viewer = document.getElementById("viewer");
-        const viewerImg = document.getElementById("viewerImg");
-        viewerImg.src = item.image_url;
-        viewer.classList.remove("hidden");
-        viewer.classList.add("flex");
-      });
+       card.innerHTML = `
+         <div class="flex items-start p-4 space-x-4">
+           <!-- Image Section -->
+           <div class="relative flex-shrink-0 group">
+             <img src="${item.image_url}" alt="${item.title}" 
+                  class="w-20 h-20 rounded-xl object-cover cursor-zoom-in transition-transform group-hover:scale-105" />
+             <div class="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+               <span class="text-white text-xs font-bold">📷</span>
+             </div>
+           </div>
+           
+           <!-- Content Section -->
+           <div class="flex-1 min-w-0">
+             <!-- Header -->
+             <div class="flex items-start justify-between mb-2">
+               <h3 class="font-bold text-gray-900 text-lg leading-tight pr-2">${item.title}</h3>
+               <span class="flex-shrink-0 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                 ${new Date(item.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+               </span>
+             </div>
+             
+             <!-- Description -->
+             ${shortDescription ? `
+               <p class="text-gray-600 text-sm leading-relaxed mb-3 line-clamp-2">${shortDescription}</p>
+             ` : ''}
+             
+             <!-- Action Buttons -->
+             <div class="flex items-center justify-between">
+               <button class="author-btn flex items-center space-x-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors" data-recipient-id="${item.recipient_id}">
+                 <span class="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center">👤</span>
+                 <span>Автор</span>
+               </button>
+               
+               <button class="donate-btn bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all" 
+                       data-announcement='${JSON.stringify(item)}'>
+                 💎 Помочь
+               </button>
+             </div>
+           </div>
+         </div>
+         
+         <!-- Progress indicator (visual element) -->
+         <div class="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-20"></div>`;
 
-      // Author button click
-      const authorBtn = card.querySelector(".author-btn");
-      authorBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        showUserProfile(item.recipient_id);
-      });
+       // Image click to open viewer
+       const img = card.querySelector("img");
+       img.addEventListener("click", (e) => {
+         e.stopPropagation();
+         const viewer = document.getElementById("viewer");
+         const viewerImg = document.getElementById("viewerImg");
+         viewerImg.src = item.image_url;
+         viewer.classList.remove("hidden");
+         viewer.classList.add("flex");
+       });
 
-      // Donate button click
-      const donateBtn = card.querySelector(".donate-btn");
-      donateBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        showDonateModal(item);
-      });
+       // Author button click
+       const authorBtn = card.querySelector(".author-btn");
+       authorBtn.addEventListener("click", (e) => {
+         e.stopPropagation();
+         showUserProfile(item.recipient_id);
+       });
 
-      feed.appendChild(card);
-    });
+       // Donate button click
+       const donateBtn = card.querySelector(".donate-btn");
+       donateBtn.addEventListener("click", (e) => {
+         e.stopPropagation();
+         showDonateModal(item);
+       });
+
+       feed.appendChild(card);
+     });
   } catch (err) {
     feed.innerHTML = `<p class='text-red-300 text-center py-8'>Ошибка загрузки: ${err}</p>`;
   }
