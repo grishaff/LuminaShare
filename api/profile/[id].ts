@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // fetch user profile
   const { data: user, error: userError } = await supabase
     .from("users")
-    .select("id, tg_id, role, display_name, avatar_url, bio, created_at")
+    .select("id, tg_id, role, display_name, avatar_url, bio, wallet_address, created_at")
     .eq("id", id)
     .single();
 

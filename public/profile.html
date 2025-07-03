@@ -147,22 +147,33 @@
         
         try {
           const resp = await fetch(`/api/profile/${userId}`);
+          
+          if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+          }
+          
           const data = await resp.json();
           
-          if (!resp.ok) throw new Error(data.error);
+          if (data.error) {
+            throw new Error(data.error);
+          }
           
           const profile = data.profile;
           const announcements = data.announcements || [];
+          
+          if (!profile) {
+            throw new Error('Профиль не найден');
+          }
           
           profileContent.innerHTML = `
             <div class="glass-card rounded-2xl shadow-xl p-6 fade-in">
               <div class="text-center mb-6">
                 ${profile.avatar_url ? 
                   `<img src="${profile.avatar_url}" class="w-20 h-20 rounded-full mx-auto mb-4 border-4 border-white shadow-lg" />` :
-                  `<div class="w-20 h-20 rounded-full mx-auto mb-4 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">${profile.display_name.charAt(0)}</div>`
+                  `<div class="w-20 h-20 rounded-full mx-auto mb-4 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">${(profile.display_name || 'У').charAt(0)}</div>`
                 }
-                <h2 class="text-2xl font-bold text-gray-900">${profile.display_name}</h2>
-                <p class="text-sm text-gray-500 mt-2">Участник с ${new Date(profile.created_at).toLocaleDateString('ru-RU')}</p>
+                <h2 class="text-2xl font-bold text-gray-900">${profile.display_name || 'Пользователь'}</h2>
+                <p class="text-sm text-gray-500 mt-2">Участник с ${profile.created_at ? new Date(profile.created_at).toLocaleDateString('ru-RU') : 'неизвестно'}</p>
                 
                 ${profile.bio ? `<p class="text-gray-700 mt-3 italic">"${profile.bio}"</p>` : ''}
                 
