@@ -5,7 +5,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "GET") {
     const { data, error } = await supabase
       .from("announcements")
-      .select("id,title,description,image_url,recipient_wallet,created_at")
+      .select("id,title,description,image_url,recipient_wallet,recipient_id,created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -18,10 +18,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === "POST") {
-    const { title, description, imageUrl, recipientWallet } = req.body ?? {};
+    const { title, description, imageUrl, recipientWallet, recipientId } = req.body ?? {};
 
-    if (!title || !imageUrl || !recipientWallet) {
-      res.status(400).json({ error: "title, imageUrl and recipientWallet are required" });
+    if (!title || !imageUrl || !recipientWallet || !recipientId) {
+      res.status(400).json({ error: "title, imageUrl, recipientWallet and recipientId are required" });
       return;
     }
 
@@ -32,6 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         description,
         image_url: imageUrl,
         recipient_wallet: recipientWallet,
+        recipient_id: recipientId,
       })
       .select()
       .single();
