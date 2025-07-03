@@ -693,11 +693,22 @@ async function loadProfile() {
   }
   
   try {
+    console.log("Loading profile for user:", userProfile.id);
     // Get user's announcements
     const resp = await fetch(`/api/profile/${userProfile.id}`);
-    const data = await resp.json();
+    console.log("Profile fetch response:", resp.status);
     
-    if (!resp.ok) throw new Error(data.error);
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      console.error("Profile fetch error:", errorText);
+      throw new Error(`HTTP ${resp.status}: ${errorText}`);
+    }
+    
+    const responseText = await resp.text();
+    console.log("Response text:", responseText);
+    
+    const data = JSON.parse(responseText);
+    console.log("Profile loaded:", data.profile);
     
     const profile = data.profile;
     const userAnnouncements = data.announcements || [];
