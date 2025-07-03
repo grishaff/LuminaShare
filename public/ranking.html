@@ -6,20 +6,68 @@
     <title>LuminaShare – Рейтинг доноров</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      body { font-family: 'Inter', sans-serif; }
+      
+      .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+      .fade-in { animation: fadeIn 0.5s ease-out; }
+      .slide-up { animation: slideUp 0.3s ease-out; }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      
+      /* Dark theme support */
+      @media (prefers-color-scheme: dark) {
+        .glass-card {
+          background: rgba(30, 41, 59, 0.95);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+      }
+    </style>
   </head>
-  <body class="min-h-screen flex flex-col" style="background: linear-gradient(301deg,#7b2ff2 0%,#f357a8 100%);">
+  <body class="min-h-screen" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    
     <!-- Header -->
-    <header class="bg-white shadow-md p-4 flex items-center justify-between">
-      <button id="backBtn" class="text-lg">← Назад</button>
-      <h1 class="text-xl font-semibold">🏆 Рейтинг доноров</h1>
-      <div></div>
+    <header class="glass-card shadow-lg p-4 sticky top-0 z-40">
+      <div class="flex items-center justify-between max-w-md mx-auto">
+        <button id="backBtn" class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 transition-colors">
+          <span class="text-xl">←</span>
+          <span class="font-medium">Назад</span>
+        </button>
+        <h1 class="text-xl font-bold text-gray-900">🏆 Рейтинг доноров</h1>
+        <div class="w-16"></div>
+      </div>
     </header>
 
     <!-- Content -->
-    <main class="flex-1 p-4">
-      <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl p-6 max-w-2xl mx-auto">
-        <div id="ranking" class="space-y-4">
-          <p class="text-center text-gray-500">Загрузка...</p>
+    <main class="p-4">
+      <div class="max-w-md mx-auto">
+        <div class="glass-card rounded-2xl shadow-xl p-6 fade-in">
+          <div class="text-center mb-6">
+            <div class="text-4xl mb-2">🏆</div>
+            <h2 class="text-xl font-bold text-gray-900">Топ жертвователей</h2>
+            <p class="text-gray-600 text-sm">Самые щедрые пользователи нашего сообщества</p>
+          </div>
+          
+          <div id="ranking" class="space-y-4">
+            <div class="flex justify-center py-8">
+              <div class="loading w-6 h-6 bg-indigo-500 rounded-full"></div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -34,7 +82,7 @@
 
       // Back button
       document.getElementById('backBtn').addEventListener('click', () => {
-        window.location.href = '/';
+        window.history.back();
       });
 
       // Load ranking
@@ -47,35 +95,53 @@
           const container = document.getElementById('ranking');
           
           if (ranking.length === 0) {
-            container.innerHTML = '<p class="text-center text-gray-500">Пока нет донатов</p>';
+            container.innerHTML = `
+              <div class="text-center py-8">
+                <div class="text-4xl mb-3">🏆</div>
+                <p class="text-gray-600">Пока нет донатов</p>
+                <p class="text-sm text-gray-500 mt-2">Станьте первым, кто поможет нуждающимся!</p>
+              </div>`;
             return;
           }
 
           container.innerHTML = ranking.map((donor, index) => {
             const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+            const bgColor = index < 3 ? 'bg-gradient-to-r from-yellow-50 to-orange-50' : 'bg-gray-50';
             
             return `
-              <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div class="flex items-center space-x-3">
-                  <span class="text-lg font-bold">${medal}</span>
+              <div class="flex items-center justify-between p-4 ${bgColor} rounded-xl hover:shadow-md transition-all slide-up" style="animation-delay: ${index * 0.1}s">
+                <div class="flex items-center space-x-4">
+                  <div class="flex items-center justify-center w-12 h-12 rounded-full ${index < 3 ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white' : 'bg-gray-200 text-gray-700'} font-bold">
+                    ${medal}
+                  </div>
                   <div>
-                    <p class="font-semibold">${donor.first_name || 'Аноним'}</p>
-                    <p class="text-sm text-gray-500">${donor.donation_count} донатов</p>
+                    <p class="font-semibold text-gray-900">${donor.first_name || 'Аноним'}</p>
+                    <p class="text-sm text-gray-500">
+                      ${donor.donation_count} ${donor.donation_count === 1 ? 'донат' : 'донатов'}
+                    </p>
                   </div>
                 </div>
                 <div class="text-right">
-                  <p class="font-bold text-green-600">${donor.total_amount} TON</p>
+                  <p class="font-bold text-green-600 text-lg">${donor.total_amount} TON</p>
+                  ${index < 3 ? '<p class="text-xs text-yellow-600 font-medium">👑 Топ-3</p>' : ''}
                 </div>
               </div>
             `;
           }).join('');
           
         } catch (err) {
-          document.getElementById('ranking').innerHTML = `<p class="text-red-500 text-center">Ошибка: ${err}</p>`;
+          document.getElementById('ranking').innerHTML = `
+            <div class="text-center py-8">
+              <div class="text-4xl mb-4">❌</div>
+              <p class="text-red-600">Ошибка загрузки: ${err.message}</p>
+            </div>`;
         }
       }
 
-      loadRanking();
+      // Initialize
+      document.addEventListener('DOMContentLoaded', () => {
+        loadRanking();
+      });
     </script>
   </body>
 </html> 

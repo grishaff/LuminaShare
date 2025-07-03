@@ -6,36 +6,72 @@
     <title>LuminaShare – Объявление</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      body { font-family: 'Inter', sans-serif; }
+      
+      .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+      .fade-in { animation: fadeIn 0.5s ease-out; }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      
+      /* Dark theme support */
+      @media (prefers-color-scheme: dark) {
+        .glass-card {
+          background: rgba(30, 41, 59, 0.95);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+      }
+    </style>
   </head>
-  <body class="min-h-screen flex flex-col" style="background: linear-gradient(301deg,#7b2ff2 0%,#f357a8 100%);">
+  <body class="min-h-screen" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    
     <!-- Header -->
-    <header class="bg-white shadow-md p-4 flex items-center justify-between">
-      <button id="backBtn" class="text-lg">← Назад</button>
-      <h1 class="text-xl font-semibold">Объявление</h1>
-      <div></div>
+    <header class="glass-card shadow-lg p-4 sticky top-0 z-40">
+      <div class="flex items-center justify-between max-w-md mx-auto">
+        <button id="backBtn" class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 transition-colors">
+          <span class="text-xl">←</span>
+          <span class="font-medium">Назад</span>
+        </button>
+        <h1 class="text-xl font-bold text-gray-900">Объявление</h1>
+        <div class="w-16"></div>
+      </div>
     </header>
 
     <!-- Content -->
-    <main class="flex-1 p-4" id="content">
-      <p class="text-white text-center">Загрузка...</p>
+    <main class="p-4" id="content">
+      <div class="flex justify-center py-12">
+        <div class="loading w-8 h-8 bg-white rounded-full"></div>
+      </div>
     </main>
 
     <!-- Donate Modal -->
     <div id="donateModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
-      <div class="bg-white rounded-2xl p-6 w-11/12 max-w-md space-y-4 shadow-xl">
-        <h3 class="text-lg font-semibold text-gray-900">Поддержать</h3>
+      <div class="glass-card rounded-2xl p-6 w-11/12 max-w-md space-y-4 shadow-xl">
+        <h3 class="text-lg font-semibold text-gray-900">💎 Поддержать</h3>
         
-        <div class="text-sm text-gray-600">
-          <p>Кошелёк получателя:</p>
-          <p id="recipientWallet" class="font-mono text-xs bg-gray-100 p-2 rounded break-all"></p>
+        <div class="text-center p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl">
+          <div class="text-sm text-gray-600">
+            <p>Кошелёк получателя:</p>
+            <p id="recipientWallet" class="font-mono text-xs bg-white p-2 rounded mt-2 break-all"></p>
+          </div>
         </div>
 
         <input type="number" id="amountInput" placeholder="Сумма (TON)" step="0.01" min="0.01"
-               class="w-full border border-gray-300 rounded-md px-3 py-2" />
+               class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
 
         <div class="flex justify-end gap-3 pt-2">
-          <button id="cancelDonate" class="px-4 py-2 text-sm rounded-md bg-gray-100">Отмена</button>
-          <button id="confirmDonate" class="px-4 py-2 text-sm rounded-md bg-green-600 text-white">Отправить TON</button>
+          <button id="cancelDonate" class="px-4 py-2 text-sm rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors">Отмена</button>
+          <button id="confirmDonate" class="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg transition-all">Отправить TON</button>
         </div>
       </div>
     </div>

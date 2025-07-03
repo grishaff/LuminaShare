@@ -3,56 +3,208 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LuminaShare – Лента</title>
+    <title>LuminaShare</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      body { font-family: 'Inter', sans-serif; }
+      
+      .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+      .fade-in { animation: fadeIn 0.5s ease-out; }
+      .slide-up { animation: slideUp 0.3s ease-out; }
+      .tab-active { color: #6366f1; background: rgba(99, 102, 241, 0.1); }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      
+      .nav-icon {
+        transition: all 0.2s ease;
+      }
+      
+      .nav-icon.active {
+        transform: scale(1.1);
+        color: #6366f1;
+      }
+      
+      /* Screen management */
+      .screen {
+        display: block;
+      }
+      
+      .screen.hidden {
+        display: none !important;
+      }
+      
+      /* Dark theme support */
+      @media (prefers-color-scheme: dark) {
+        .glass-card {
+          background: rgba(30, 41, 59, 0.95);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+      }
+    </style>
   </head>
-  <body class="min-h-screen flex flex-col" style="background: linear-gradient(301deg,#7b2ff2 0%,#f357a8 100%);">
+  <body class="min-h-screen pb-20" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    
     <!-- Header -->
-    <header class="bg-white shadow-md p-4 flex items-center justify-between">
-      <h1 class="text-xl font-semibold">LuminaShare</h1>
-      <div class="flex space-x-2">
-        <button id="rankingBtn" class="px-3 py-1 bg-yellow-500 text-white rounded-md text-sm">🏆</button>
-        <button id="newBtn" class="px-3 py-1 bg-indigo-600 text-white rounded-md text-sm">+ Новое</button>
+    <header class="glass-card shadow-lg p-4 sticky top-0 z-40">
+      <div class="flex items-center justify-between max-w-md mx-auto">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <span class="text-white font-bold text-sm">L</span>
+          </div>
+          <h1 class="text-xl font-bold text-gray-900">LuminaShare</h1>
+        </div>
+        <div class="flex items-center space-x-2">
+          <div id="userInfo" class="hidden">
+            <img id="userAvatar" class="w-8 h-8 rounded-full border-2 border-white shadow-md" />
+          </div>
+          <div id="walletStatus" class="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-600 hidden">
+            Нет кошелька
+          </div>
+        </div>
       </div>
     </header>
 
-    <!-- Info banner (hidden after first dismiss) -->
-    <div id="infoBanner" class="bg-indigo-50 text-indigo-800 p-3 text-sm flex items-start gap-2">
-      <p>100 % перевода уходит получателю. Помогите тем, кому нужна поддержка.</p>
-      <button id="closeBanner" class="ml-auto text-indigo-600">×</button>
+    <!-- App Screens Container -->
+    <div id="appContainer" class="flex-1">
+      
+      <!-- Feed Screen -->
+      <div id="feedScreen" class="screen active">
+        <!-- Info banner -->
+        <div id="infoBanner" class="bg-gradient-to-r from-blue-50 to-indigo-50 text-indigo-800 p-4 mx-4 mt-4 rounded-xl flex items-center gap-3 glass-card">
+          <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <span class="text-indigo-600">💝</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-medium">100% перевода уходит получателю</p>
+            <p class="text-xs text-indigo-600">Помогите тем, кому нужна поддержка</p>
+          </div>
+          <button id="closeBanner" class="text-indigo-400 hover:text-indigo-600 text-xl">×</button>
+        </div>
+
+        <!-- Feed -->
+        <main class="p-4" id="feed">
+          <div class="flex justify-center py-8">
+            <div class="loading w-8 h-8 bg-white rounded-full"></div>
+          </div>
+        </main>
+      </div>
+
+      <!-- Create Screen -->
+      <div id="createScreen" class="screen hidden p-4">
+        <div class="max-w-md mx-auto">
+          <h2 class="text-2xl font-bold text-white mb-6 text-center">Новое объявление</h2>
+          
+          <form id="createForm" class="glass-card rounded-2xl p-6 space-y-4 shadow-xl">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Заголовок</label>
+              <input type="text" name="title" placeholder="Краткое описание помощи" required
+                     class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Описание</label>
+              <textarea name="description" rows="4" placeholder="Подробное описание ситуации..."
+                        class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">TON кошелёк получателя</label>
+              <input type="text" name="wallet" placeholder="UQA..." required
+                     class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Фотография</label>
+              <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-indigo-400 transition-colors">
+                <input type="file" name="image" accept="image/*" required class="hidden" id="imageInput" />
+                <label for="imageInput" class="cursor-pointer">
+                  <div class="text-gray-400 mb-2">📷</div>
+                  <div class="text-sm text-gray-600">Нажмите для выбора фото</div>
+                </label>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all">
+              Опубликовать
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Ranking Screen -->
+      <div id="rankingScreen" class="screen hidden p-4">
+        <div class="max-w-md mx-auto">
+          <h2 class="text-2xl font-bold text-white mb-6 text-center">🏆 Рейтинг доноров</h2>
+          <div class="glass-card rounded-2xl shadow-xl p-6">
+            <div id="rankingList" class="space-y-4">
+              <div class="flex justify-center py-4">
+                <div class="loading w-6 h-6 bg-indigo-500 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Screen -->
+      <div id="profileScreen" class="screen hidden p-4">
+        <div class="max-w-md mx-auto">
+          <div id="profileContent" class="space-y-6">
+            <div class="flex justify-center py-4">
+              <div class="loading w-6 h-6 bg-white rounded-full"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Feed -->
-    <main class="flex-1 overflow-y-auto" id="feed"></main>
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 glass-card border-t border-gray-200 bg-white/95 backdrop-blur-md">
+      <div class="flex justify-around items-center py-2 max-w-md mx-auto">
+        
+        <button class="nav-tab active flex flex-col items-center py-2 px-4 rounded-lg transition-all" data-tab="feed">
+          <span class="nav-icon text-xl mb-1">🏠</span>
+          <span class="text-xs font-medium">Лента</span>
+        </button>
+        
+        <button class="nav-tab flex flex-col items-center py-2 px-4 rounded-lg transition-all" data-tab="create">
+          <span class="nav-icon text-xl mb-1">➕</span>
+          <span class="text-xs font-medium">Создать</span>
+        </button>
+        
+        <button class="nav-tab flex flex-col items-center py-2 px-4 rounded-lg transition-all" data-tab="ranking">
+          <span class="nav-icon text-xl mb-1">🏆</span>
+          <span class="text-xs font-medium">Рейтинг</span>
+        </button>
+        
+        <button class="nav-tab flex flex-col items-center py-2 px-4 rounded-lg transition-all" data-tab="profile">
+          <span class="nav-icon text-xl mb-1">👤</span>
+          <span class="text-xs font-medium">Профиль</span>
+        </button>
+        
+      </div>
+    </nav>
 
     <!-- Image viewer overlay -->
-    <div id="viewer" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div id="viewer" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden items-center justify-center z-50">
       <img id="viewerImg" class="max-w-full max-h-full rounded-lg shadow-2xl" />
-    </div>
-
-    <!-- New announcement modal -->
-    <div id="newModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
-      <form id="newForm" class="bg-white rounded-2xl p-6 w-11/12 max-w-md space-y-4 shadow-xl">
-        <h3 class="text-lg font-semibold text-gray-900">Новое объявление</h3>
-
-        <input type="text" name="title" placeholder="Заголовок" required
-               class="w-full border border-gray-300 rounded-md px-3 py-2" />
-
-        <textarea name="description" rows="3" placeholder="Описание"
-                  class="w-full border border-gray-300 rounded-md px-3 py-2"></textarea>
-
-        <input type="text" name="wallet" placeholder="TON кошелёк получателя" required
-               class="w-full border border-gray-300 rounded-md px-3 py-2" />
-
-        <input type="file" name="image" accept="image/*" required
-               class="w-full" />
-
-        <div class="flex justify-end gap-3 pt-2">
-          <button type="button" id="cancelNew" class="px-4 py-2 text-sm rounded-md bg-gray-100">Отмена</button>
-          <button type="submit" class="px-4 py-2 text-sm rounded-md bg-indigo-600 text-white">Опубликовать</button>
-        </div>
-      </form>
+      <button id="closeViewer" class="absolute top-4 right-4 text-white text-2xl w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">×</button>
     </div>
 
     <script src="/app.js"></script>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LuminaShare – Профиль</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      body { font-family: 'Inter', sans-serif; }
+      
+      .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+      .fade-in { animation: fadeIn 0.5s ease-out; }
+      .slide-up { animation: slideUp 0.3s ease-out; }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      
+      /* Dark theme support */
+      @media (prefers-color-scheme: dark) {
+        .glass-card {
+          background: rgba(30, 41, 59, 0.95);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+      }
+    </style>
+  </head>
+  <body class="min-h-screen" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    
+    <!-- Header -->
+    <header class="glass-card shadow-lg p-4 sticky top-0 z-40">
+      <div class="flex items-center justify-between max-w-md mx-auto">
+        <button id="backBtn" class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 transition-colors">
+          <span class="text-xl">←</span>
+          <span class="font-medium">Назад</span>
+        </button>
+        <h1 class="text-xl font-bold text-gray-900">Профиль</h1>
+        <div class="w-16"></div> <!-- Spacer for centering -->
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="p-4">
+      <div class="max-w-md mx-auto">
+        <div id="profileContent" class="space-y-6">
+          <div class="flex justify-center py-12">
+            <div class="loading w-8 h-8 bg-white rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Donate Modal -->
+    <div id="donateModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
+      <div class="glass-card rounded-2xl p-6 w-11/12 max-w-md space-y-4 shadow-xl">
+        <h3 class="text-lg font-semibold text-gray-900">💎 Поддержать пользователя</h3>
+        
+        <div class="text-center p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl">
+          <div id="donateUserName" class="font-semibold text-gray-900 mb-2"></div>
+          <div class="text-sm text-gray-600">
+            <p>Кошелёк получателя:</p>
+            <p id="recipientWallet" class="font-mono text-xs bg-white p-2 rounded mt-2 break-all"></p>
+          </div>
+        </div>
+
+        <input type="number" id="amountInput" placeholder="Сумма (TON)" step="0.01" min="0.01"
+               class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button id="cancelDonate" class="px-4 py-2 text-sm rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors">Отмена</button>
+          <button id="confirmDonate" class="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg transition-all">Отправить TON</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image viewer overlay -->
+    <div id="viewer" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden items-center justify-center z-50">
+      <img id="viewerImg" class="max-w-full max-h-full rounded-lg shadow-2xl" />
+      <button id="closeViewer" class="absolute top-4 right-4 text-white text-2xl w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">×</button>
+    </div>
+
+    <script>
+      // Telegram Web App initialization
+      let tg = window.Telegram?.WebApp;
+      let user = null;
+
+      if (tg) {
+        tg.ready();
+        tg.expand();
+        user = tg.initDataUnsafe?.user;
+      }
+
+      // Get user ID from URL params
+      const urlParams = new URLSearchParams(window.location.search);
+      const userId = urlParams.get('id');
+
+      // Back button
+      document.getElementById('backBtn').addEventListener('click', () => {
+        window.history.back();
+      });
+
+      // Initialize image viewer
+      function initImageViewer() {
+        const viewer = document.getElementById("viewer");
+        const viewerImg = document.getElementById("viewerImg");
+        const closeBtn = document.getElementById("closeViewer");
+        
+        closeBtn.addEventListener("click", () => {
+          viewer.classList.add("hidden");
+          viewer.classList.remove("flex");
+          viewerImg.src = "";
+        });
+        
+        viewer.addEventListener("click", (e) => {
+          if (e.target === viewer) {
+            closeBtn.click();
+          }
+        });
+      }
+
+      // Load user profile
+      async function loadUserProfile() {
+        const profileContent = document.getElementById("profileContent");
+        
+        if (!userId) {
+          profileContent.innerHTML = `
+            <div class="glass-card rounded-2xl p-6 text-center">
+              <div class="text-4xl mb-4">❌</div>
+              <p class="text-gray-700">Пользователь не найден</p>
+            </div>`;
+          return;
+        }
+        
+        try {
+          const resp = await fetch(`/api/profile/${userId}`);
+          const data = await resp.json();
+          
+          if (!resp.ok) throw new Error(data.error);
+          
+          const profile = data.profile;
+          const announcements = data.announcements || [];
+          
+          profileContent.innerHTML = `
+            <div class="glass-card rounded-2xl shadow-xl p-6 fade-in">
+              <div class="text-center mb-6">
+                ${profile.avatar_url ? 
+                  `<img src="${profile.avatar_url}" class="w-20 h-20 rounded-full mx-auto mb-4 border-4 border-white shadow-lg" />` :
+                  `<div class="w-20 h-20 rounded-full mx-auto mb-4 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">${profile.display_name.charAt(0)}</div>`
+                }
+                <h2 class="text-2xl font-bold text-gray-900">${profile.display_name}</h2>
+                <p class="text-sm text-gray-500 mt-2">Участник с ${new Date(profile.created_at).toLocaleDateString('ru-RU')}</p>
+                
+                ${profile.bio ? `<p class="text-gray-700 mt-3 italic">"${profile.bio}"</p>` : ''}
+                
+                ${profile.wallet_address ? 
+                  `<button id="donateUserBtn" class="mt-4 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">
+                    💎 Поддержать пользователя
+                  </button>` : 
+                  `<p class="text-orange-600 text-sm mt-3">🚫 Кошелёк не привязан</p>`
+                }
+              </div>
+            </div>
+            
+            <div class="glass-card rounded-2xl shadow-xl p-6 slide-up">
+              <h3 class="text-xl font-bold text-gray-900 mb-4">📝 Объявления пользователя (${announcements.length})</h3>
+              
+              ${announcements.length > 0 ? 
+                `<div class="space-y-3">
+                  ${announcements.map((ann, index) => `
+                    <div class="flex items-center space-x-4 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow slide-up" style="animation-delay: ${index * 0.1}s">
+                      <img src="${ann.image_url}" class="w-16 h-16 rounded-xl object-cover cursor-pointer" onclick="openImageViewer('${ann.image_url}')" />
+                      <div class="flex-1">
+                        <h4 class="font-semibold text-gray-900">${ann.title}</h4>
+                        <p class="text-xs text-gray-500">${new Date(ann.created_at).toLocaleDateString('ru-RU')}</p>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>` :
+                `<div class="text-center py-8">
+                  <div class="text-4xl mb-3">📋</div>
+                  <p class="text-gray-600">Пока нет объявлений</p>
+                </div>`
+              }
+            </div>`;
+          
+          // Setup donate button
+          const donateBtn = document.getElementById('donateUserBtn');
+          if (donateBtn) {
+            donateBtn.addEventListener('click', () => {
+              showDonateModal(profile);
+            });
+          }
+          
+        } catch (err) {
+          profileContent.innerHTML = `
+            <div class="glass-card rounded-2xl p-6 text-center">
+              <div class="text-4xl mb-4">❌</div>
+              <p class="text-red-600">Ошибка загрузки профиля: ${err.message}</p>
+            </div>`;
+        }
+      }
+
+      // Open image viewer
+      function openImageViewer(imageUrl) {
+        const viewer = document.getElementById("viewer");
+        const viewerImg = document.getElementById("viewerImg");
+        viewerImg.src = imageUrl;
+        viewer.classList.remove("hidden");
+        viewer.classList.add("flex");
+      }
+
+      // Show donate modal
+      function showDonateModal(profile) {
+        const modal = document.getElementById('donateModal');
+        const userNameEl = document.getElementById('donateUserName');
+        const walletEl = document.getElementById('recipientWallet');
+        
+        userNameEl.textContent = profile.display_name;
+        walletEl.textContent = profile.wallet_address;
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+
+      // Initialize donate modal
+      function initDonateModal() {
+        const modal = document.getElementById('donateModal');
+        const cancelBtn = document.getElementById('cancelDonate');
+        const confirmBtn = document.getElementById('confirmDonate');
+        const amountInput = document.getElementById('amountInput');
+
+        cancelBtn.addEventListener('click', () => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          amountInput.value = '';
+        });
+
+        confirmBtn.addEventListener('click', async () => {
+          const amount = parseFloat(amountInput.value);
+          if (!amount || amount <= 0) {
+            alert('Введите корректную сумму');
+            return;
+          }
+
+          // This will be implemented with TON Connect
+          alert(`Перевод ${amount} TON будет добавлен после интеграции TON Connect`);
+          cancelBtn.click();
+        });
+      }
+
+      // Initialize everything
+      document.addEventListener('DOMContentLoaded', () => {
+        initImageViewer();
+        initDonateModal();
+        loadUserProfile();
+      });
+    </script>
+  </body>
+</html> 
