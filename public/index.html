@@ -6,7 +6,7 @@
     <title>LuminaShare – Лента</title>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body class="bg-gray-50 min-h-screen flex flex-col">
+  <body class="min-h-screen flex flex-col" style="background: linear-gradient(301deg,#7b2ff2 0%,#f357a8 100%);">
     <!-- Header -->
     <header class="bg-white shadow-md p-4 flex items-center justify-between">
       <h1 class="text-xl font-semibold">LuminaShare</h1>
@@ -21,6 +21,11 @@
 
     <!-- Feed -->
     <main class="flex-1 overflow-y-auto" id="feed"></main>
+
+    <!-- Image viewer overlay -->
+    <div id="viewer" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50">
+      <img id="viewerImg" class="max-w-full max-h-full rounded-lg shadow-2xl" />
+    </div>
 
     <script src="/app.js"></script>
   </body>
