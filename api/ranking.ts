@@ -8,32 +8,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  // агрегируем донаты напрямую с данными пользователей
-  const { data, error } = await supabase
+  // получаем все донаты
+  const { data: donations, error: donationsError } = await supabase
     .from('donations')
-    .select(`
-      donor_tg_id,
-      amount_ton,
-      users!donations_donor_tg_id_fkey (
-        first_name,
-        last_name,
-        username,
-        display_name
-      )
-    `);
+    .select('donor_tg_id, amount_ton');
 
-  if (error) {
-    res.status(500).json({ error: error.message });
+  if (donationsError) {
+    res.status(500).json({ error: donationsError.message });
     return;
   }
+
+  // получаем данные пользователей отдельно
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('tg_id, first_name, last_name, username, display_name');
+
+  if (usersError) {
+    res.status(500).json({ error: usersError.message });
+    return;
+  }
+
+  // создаем карту пользователей для быстрого поиска
+  const userMap = new Map();
+  users?.forEach(user => {
+    userMap.set(user.tg_id, user);
+  });
 
   // Агрегируем данные по donor_tg_id
   const rankings = new Map();
   
-  data?.forEach(donation => {
+  donations?.forEach(donation => {
     const donorId = donation.donor_tg_id;
     const amount = parseFloat(donation.amount_ton) || 0;
-    const user = Array.isArray(donation.users) ? donation.users[0] : donation.users;
+    const user = userMap.get(donorId);
     
     if (rankings.has(donorId)) {
       const existing = rankings.get(donorId);
