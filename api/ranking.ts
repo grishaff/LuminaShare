@@ -11,10 +11,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // агрегируем донаты по donor_tg_id
   const { data, error } = await supabase
     .from("donations")
-    .select("donor_tg_id, sum(amount_ton)")
-    // @ts-ignore – метод group есть в runtime, но отсутствует в типах supabase-js
-    .group("donor_tg_id")
-    .order("sum", { ascending: false })
+    .select("donor_tg_id, sum(amount_ton) as total")
+    .order("total", { ascending: false })
     .limit(100);
 
   if (error) {
