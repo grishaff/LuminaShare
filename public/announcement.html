@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LuminaShare – Объявление</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen flex flex-col" style="background: linear-gradient(301deg,#7b2ff2 0%,#f357a8 100%);">
+    <!-- Header -->
+    <header class="bg-white shadow-md p-4 flex items-center justify-between">
+      <button id="backBtn" class="text-lg">← Назад</button>
+      <h1 class="text-xl font-semibold">Объявление</h1>
+      <div></div>
+    </header>
+
+    <!-- Content -->
+    <main class="flex-1 p-4" id="content">
+      <p class="text-white text-center">Загрузка...</p>
+    </main>
+
+    <!-- Donate Modal -->
+    <div id="donateModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
+      <div class="bg-white rounded-2xl p-6 w-11/12 max-w-md space-y-4 shadow-xl">
+        <h3 class="text-lg font-semibold text-gray-900">Поддержать</h3>
+        
+        <div class="text-sm text-gray-600">
+          <p>Кошелёк получателя:</p>
+          <p id="recipientWallet" class="font-mono text-xs bg-gray-100 p-2 rounded break-all"></p>
+        </div>
+
+        <input type="number" id="amountInput" placeholder="Сумма (TON)" step="0.01" min="0.01"
+               class="w-full border border-gray-300 rounded-md px-3 py-2" />
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button id="cancelDonate" class="px-4 py-2 text-sm rounded-md bg-gray-100">Отмена</button>
+          <button id="confirmDonate" class="px-4 py-2 text-sm rounded-md bg-green-600 text-white">Отправить TON</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/announcement.js"></script>
+  </body>
+</html>

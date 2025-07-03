@@ -1,3 +1,19 @@
+// Telegram Web App initialization
+let tg = window.Telegram?.WebApp;
+let user = null;
+
+if (tg) {
+  tg.ready();
+  tg.expand();
+  user = tg.initDataUnsafe?.user;
+  
+  // Hide banner if in Telegram
+  const bannerEl = document.getElementById("infoBanner");
+  if (bannerEl) bannerEl.style.display = "none";
+} else {
+  console.log("Running outside Telegram");
+}
+
 // Info banner logic
 const bannerEl = document.getElementById("infoBanner");
 const closeBannerBtn = document.getElementById("closeBanner");
@@ -49,9 +65,9 @@ async function loadFeed() {
         viewer.classList.add("flex");
       });
 
-      // placeholder card click
+      // navigate to announcement details
       card.addEventListener("click", () => {
-        alert(`Открыть объявление: ${item.id}`);
+        window.location.href = `/announcement.html?id=${item.id}`;
       });
 
       feed.appendChild(card);
@@ -69,6 +85,12 @@ async function loadFeed() {
 }
 
 loadFeed();
+
+// ===== Рейтинг =====
+const rankingBtn = document.getElementById("rankingBtn");
+rankingBtn.addEventListener("click", () => {
+  window.location.href = "/ranking.html";
+});
 
 // ===== Новое объявление =====
 const newBtn = document.getElementById("newBtn");
@@ -106,12 +128,31 @@ newForm.addEventListener("submit", async (e) => {
     if (!upJson.ok) throw new Error("upload failed");
     const imageUrl = upJson.url;
 
-    // 2) ensure recipientId in localStorage (simplified)
-    let recipientId = localStorage.getItem("recipientId");
-    if (!recipientId) {
-      recipientId = prompt("Введите UUID вашего профиля (recipientId)");
-      if (!recipientId) return;
-      localStorage.setItem("recipientId", recipientId);
+    // 2) get or create user profile
+    let recipientId;
+    
+    if (user?.id) {
+      // Create/update user profile in database
+      const userResp = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tgId: user.id,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          username: user.username
+        })
+      });
+      const userData = await userResp.json();
+      recipientId = userData.user.id;
+    } else {
+      // Fallback for testing outside Telegram
+      recipientId = localStorage.getItem("recipientId");
+      if (!recipientId) {
+        recipientId = prompt("Введите UUID вашего профиля (recipientId)");
+        if (!recipientId) return;
+        localStorage.setItem("recipientId", recipientId);
+      }
     }
 
     // 3) create announcement

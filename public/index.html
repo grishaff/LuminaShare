@@ -4,13 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LuminaShare – Лента</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="min-h-screen flex flex-col" style="background: linear-gradient(301deg,#7b2ff2 0%,#f357a8 100%);">
     <!-- Header -->
     <header class="bg-white shadow-md p-4 flex items-center justify-between">
       <h1 class="text-xl font-semibold">LuminaShare</h1>
-      <button id="newBtn" class="px-3 py-1 bg-indigo-600 text-white rounded-md text-sm">+ Новое</button>
+      <div class="flex space-x-2">
+        <button id="rankingBtn" class="px-3 py-1 bg-yellow-500 text-white rounded-md text-sm">🏆</button>
+        <button id="newBtn" class="px-3 py-1 bg-indigo-600 text-white rounded-md text-sm">+ Новое</button>
+      </div>
     </header>
 
     <!-- Info banner (hidden after first dismiss) -->
