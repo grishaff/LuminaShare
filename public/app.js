@@ -156,15 +156,25 @@ async function loadUserProfile() {
     
     // Create new profile if doesn't exist
     console.log("Creating new profile for user:", user);
+    
+    const displayName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || `User ${user.id}`;
+    const userData = {
+      tgId: user.id,
+      role: "user",
+      displayName: displayName
+    };
+    
+    // Добавляем аватар только если он есть
+    if (user.photo_url) {
+      userData.avatarUrl = user.photo_url;
+    }
+    
+    console.log("User data to send:", userData);
+    
     const createResp = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        tgId: user.id,
-        role: "user",
-        displayName: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || `User ${user.id}`,
-        avatarUrl: user.photo_url
-      })
+      body: JSON.stringify(userData)
     });
     
     console.log("Create profile response:", createResp.status);
@@ -176,10 +186,57 @@ async function loadUserProfile() {
       updateWalletStatus();
     } else {
       const errorData = await createResp.json();
-      console.error("Failed to create profile:", errorData);
+      console.error("Failed to create profile:", createResp.status, errorData);
+      
+      // Показываем пользователю детали ошибки
+      const errorMsg = `Ошибка создания профиля: ${errorData.error || 'Неизвестная ошибка'}`;
+      if (tg) {
+        tg.showAlert(errorMsg);
+      } else {
+        alert(errorMsg);
+      }
     }
   } catch (err) {
     console.error("Error loading user profile:", err);
+    
+    // Пробуем простой API как fallback
+    try {
+      console.log("Trying simple API as fallback...");
+      
+      // Пробуем получить профиль через простой API
+      const simpleResp = await fetch(`/api/users-simple?tgId=${user.id}`);
+      if (simpleResp.ok) {
+        const data = await simpleResp.json();
+        userProfile = data.profile;
+        console.log("Profile loaded via simple API:", userProfile);
+        updateWalletStatus();
+        return;
+      }
+      
+      // Пробуем создать через простой API
+      const displayName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || `User ${user.id}`;
+      const createSimpleResp = await fetch("/api/users-simple", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tgId: user.id,
+          displayName: displayName
+        })
+      });
+      
+      if (createSimpleResp.ok) {
+        const data = await createSimpleResp.json();
+        userProfile = data.user;
+        console.log("Profile created via simple API:", userProfile);
+        updateWalletStatus();
+      } else {
+        const errorData = await createSimpleResp.json();
+        console.error("Simple API also failed:", errorData);
+      }
+      
+    } catch (fallbackErr) {
+      console.error("Fallback API also failed:", fallbackErr);
+    }
   }
 }
 
@@ -478,9 +535,14 @@ async function loadProfile() {
           <div class="text-6xl mb-4">⚠️</div>
           <p class="text-gray-700 text-lg mb-4">Не удалось загрузить профиль</p>
           <p class="text-gray-500 text-sm mb-4">Проверьте консоль для деталей</p>
-          <button id="retryProfileBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors">
-            Попробовать снова
-          </button>
+          <div class="space-y-3">
+            <button id="retryProfileBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors">
+              Попробовать снова
+            </button>
+            <button id="debugBtn" class="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors">
+              Проверить базу данных
+            </button>
+          </div>
         </div>`;
       
       // Добавляем обработчик для кнопки повторной попытки
@@ -496,6 +558,32 @@ async function loadProfile() {
               <p class="text-gray-700">Повторная загрузка...</p>
             </div>`;
           await loadProfile();
+        });
+      }
+      
+      // Добавляем обработчик для debug кнопки
+      const debugBtn = document.getElementById('debugBtn');
+      if (debugBtn) {
+        debugBtn.addEventListener('click', async () => {
+          try {
+            console.log("Fetching debug info...");
+            const resp = await fetch('/api/debug');
+            const debugData = await resp.json();
+            console.log("Debug data:", debugData);
+            
+            if (tg) {
+              tg.showAlert("Debug информация выведена в консоль");
+            } else {
+              alert("Debug информация выведена в консоль");
+            }
+          } catch (err) {
+            console.error("Debug fetch error:", err);
+            if (tg) {
+              tg.showAlert("Ошибка получения debug информации");
+            } else {
+              alert("Ошибка получения debug информации");
+            }
+          }
         });
       }
       return;

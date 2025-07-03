@@ -9,29 +9,60 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // проверяем донаты
-    const { data: donations, error: donationsError } = await supabase
-      .from('donations')
-      .select('*');
+    // Получаем информацию о таблице users
+    const { data: tableInfo, error: infoError } = await supabase
+      .from("information_schema.columns")
+      .select("column_name, data_type, is_nullable")
+      .eq("table_name", "users");
 
-    // проверяем пользователей
+    if (infoError) {
+      console.log("Could not get table info:", infoError);
+    }
+
+    // Пытаемся получить все записи пользователей
     const { data: users, error: usersError } = await supabase
-      .from('users')
-      .select('*');
+      .from("users")
+      .select("*")
+      .limit(10);
 
-    res.status(200).json({ 
-      donations: {
-        data: donations,
-        error: donationsError,
-        count: donations?.length || 0
-      },
-      users: {
-        data: users,
-        error: usersError,
-        count: users?.length || 0
+    // Пытаемся создать тестового пользователя с минимальными полями
+    const testUser = {
+      tg_id: 999999999,
+      display_name: "Test User",
+      role: "user"
+    };
+
+    const { data: testResult, error: testError } = await supabase
+      .from("users")
+      .upsert(testUser, { onConflict: "tg_id" })
+      .select()
+      .single();
+
+    // Удаляем тестового пользователя
+    if (testResult) {
+      await supabase
+        .from("users")
+        .delete()
+        .eq("tg_id", 999999999);
+    }
+
+    res.status(200).json({
+      tableStructure: tableInfo || "Could not fetch table structure",
+      tableError: infoError?.message || null,
+      existingUsers: users || [],
+      usersError: usersError?.message || null,
+      testInsert: {
+        success: !testError,
+        error: testError?.message || null,
+        result: testResult
       }
     });
+
   } catch (err) {
-    res.status(500).json({ error: String(err) });
+    console.error("Debug error:", err);
+    res.status(500).json({ 
+      error: "Internal server error", 
+      details: err instanceof Error ? err.message : String(err)
+    });
   }
 }
