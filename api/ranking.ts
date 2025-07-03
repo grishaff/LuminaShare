@@ -8,25 +8,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  // получаем все донаты
-  const { data: donations, error: donationsError } = await supabase
-    .from('donations')
-    .select('donor_tg_id, amount_ton');
+  try {
+    console.log('Fetching donations...');
+    // получаем все донаты
+    const { data: donations, error: donationsError } = await supabase
+      .from('donations')
+      .select('donor_tg_id, amount_ton');
 
-  if (donationsError) {
-    res.status(500).json({ error: donationsError.message });
-    return;
-  }
+    if (donationsError) {
+      console.error('Donations error:', donationsError);
+      res.status(500).json({ error: `Donations error: ${donationsError.message}` });
+      return;
+    }
 
-  // получаем данные пользователей отдельно
-  const { data: users, error: usersError } = await supabase
-    .from('users')
-    .select('tg_id, first_name, last_name, username, display_name');
+    console.log('Donations fetched:', donations?.length || 0);
 
-  if (usersError) {
-    res.status(500).json({ error: usersError.message });
-    return;
-  }
+    console.log('Fetching users...');
+    // получаем данные пользователей отдельно
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('tg_id, first_name, last_name, username, display_name');
+
+    if (usersError) {
+      console.error('Users error:', usersError);
+      res.status(500).json({ error: `Users error: ${usersError.message}` });
+      return;
+    }
+
+    console.log('Users fetched:', users?.length || 0);
 
   // создаем карту пользователей для быстрого поиска
   const userMap: any = {};
@@ -60,5 +69,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .sort((a: any, b: any) => b.total_amount - a.total_amount)
     .slice(0, 100);
 
-  res.status(200).json({ ranking: rankingArray });
+    console.log('Returning ranking with', rankingArray.length, 'entries');
+    res.status(200).json({ ranking: rankingArray });
+  } catch (error) {
+    console.error('Ranking API error:', error);
+    res.status(500).json({ error: `Internal server error: ${error}` });
+  }
 }
