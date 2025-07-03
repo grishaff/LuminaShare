@@ -10,10 +10,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // агрегируем донаты по donor_tg_id
   const { data, error } = await supabase
-    .from("donations")
-    .select("donor_tg_id, sum(amount_ton) as total")
-    .order("total", { ascending: false })
-    .limit(100);
+  .from('donor_ranking')
+  .select('donor_tg_id, total')
+  .limit(100);
 
   if (error) {
     res.status(500).json({ error: error.message });
