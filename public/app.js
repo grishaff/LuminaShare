@@ -101,7 +101,7 @@ newForm.addEventListener("submit", async (e) => {
     // 1) upload image
     const imgForm = new FormData();
     imgForm.append("file", imageFile);
-    const upResp = await fetch("/api/upload", { method: "POST", body: imgForm });
+    const upResp = await fetch("/api/uploadImage", { method: "POST", body: imgForm });
     const upJson = await upResp.json();
     if (!upJson.ok) throw new Error("upload failed");
     const imageUrl = upJson.url;
