@@ -1199,6 +1199,8 @@ function initConnectWalletModal() {
   const telegramWalletBtn = document.getElementById('openTelegramWallet');
   const walletOptions = document.querySelectorAll('.wallet-option');
 
+  if (!modal || !closeBtn || !telegramWalletBtn) return;
+
   closeBtn.addEventListener('click', hideConnectWalletModal);
   
   telegramWalletBtn.addEventListener('click', () => {
