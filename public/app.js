@@ -186,6 +186,10 @@ async function loadUserProfile() {
     if (user.photo_url) {
       userData.avatarUrl = user.photo_url;
     }
+    // Добавляем username если есть
+    if (user.username) {
+      userData.username = user.username;
+    }
     
     console.log("User data to send:", userData);
     
@@ -542,7 +546,7 @@ async function loadRanking() {
 
     rankingList.innerHTML = ranking.map((donor, index) => {
       const position = index + 1;
-      
+      const username = donor.username || '';
       // Определяем количество звезд для отображения
       const starsCount = donor.total_amount_stars || 0;
       const formattedStars = starsCount >= 1000 ? 
@@ -551,8 +555,8 @@ async function loadRanking() {
       
       return `
         <div class="flex items-center justify-between py-3 px-2 hover:bg-gray-800/30 transition-colors cursor-pointer ranking-item" 
-             data-user-id="${donor.donor_tg_id}" 
-             data-user-name="${donor.first_name || 'Аноним'}"
+             data-username="${username}"
+             data-user-name="${username}"
              data-user-position="${position}"
              data-user-stars="${starsCount}"
              style="animation-delay: ${index * 0.05}s">
@@ -560,13 +564,13 @@ async function loadRanking() {
           <div class="flex items-center space-x-3">
             <!-- Avatar -->
             <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-              ${(donor.first_name || 'A').charAt(0).toUpperCase()}
+              ${(username || 'A').charAt(0).toUpperCase()}
             </div>
             
             <!-- User Info -->
             <div class="flex flex-col">
               <div class="flex items-center space-x-2">
-                <span class="text-white font-medium">${donor.first_name || 'Аноним'}</span>
+                <span class="text-white font-medium">${username || 'Аноним'}</span>
                 ${donor.total_amount_stars >= 1000 ? '<span class="text-blue-400">🔵</span>' : ''}
               </div>
               <div class="flex items-center space-x-1">
@@ -587,17 +591,10 @@ async function loadRanking() {
     // Добавляем обработчики кликов на пользователей
     document.querySelectorAll('.ranking-item').forEach(item => {
       item.addEventListener('click', () => {
-        const userId = item.dataset.userId;
-        const userName = item.dataset.userName;
-        const position = item.dataset.userPosition;
-        const stars = item.dataset.userStars;
-        
-        showUserProfile({
-          tg_id: userId,
-          first_name: userName,
-          position: position,
-          total_amount_stars: stars
-        });
+        const username = item.dataset.username;
+        if (username) {
+          window.location.href = `/profile.html?username=${encodeURIComponent(username)}`;
+        }
       });
     });
     
@@ -875,30 +872,15 @@ function hideUserProfile() {
   modal.classList.remove('flex');
 }
 
-function openUserInTelegram(userId) {
-  if (!userId) return;
-  
-  try {
-    // Формируем ссылку на пользователя в Telegram
-    const telegramUrl = `https://t.me/user${userId}`;
-    
-    if (tg && tg.openLink) {
-      // Используем Telegram WebApp API для открытия ссылки
-      tg.openLink(telegramUrl);
-    } else if (window.open) {
-      // Fallback для браузера
-      window.open(telegramUrl, '_blank');
-    } else {
-      // Последний fallback
-      window.location.href = telegramUrl;
-    }
-  } catch (err) {
-    console.error('Error opening Telegram:', err);
-    if (tg) {
-      tg.showAlert('Не удалось открыть профиль в Telegram');
-    } else {
-      alert('Не удалось открыть профиль в Telegram');
-    }
+function openUserInTelegram(username) {
+  if (!username) return;
+  const url = `https://t.me/${username}`;
+  if (window.tg && tg.openTelegramLink) {
+    tg.openTelegramLink(url);
+  } else if (window.tg && tg.openLink) {
+    tg.openLink(url, { try_instant_view: false });
+  } else {
+    window.open(url, '_blank');
   }
 }
 
@@ -1247,6 +1229,62 @@ function initConnectWalletModal() {
       hideConnectWalletModal();
     }
   });
+}
+
+// Для profile.html: загрузка профиля по username
+async function loadProfileByUsername() {
+  const params = new URLSearchParams(window.location.search);
+  const username = params.get('username');
+  if (!username) return;
+
+  const profileContent = document.getElementById("profileContent");
+  profileContent.innerHTML = `<div class='text-center py-8 text-white'>Загрузка профиля...</div>`;
+
+  try {
+    // Получаем профиль по username
+    const resp = await fetch(`/api/users-by-username?username=${encodeURIComponent(username)}`);
+    if (!resp.ok) throw new Error('Пользователь не найден');
+    const data = await resp.json();
+    const profile = data.profile;
+
+    // Заполняем профиль
+    profileContent.innerHTML = `
+      <div class="glass-card rounded-2xl shadow-xl p-6 fade-in">
+        <div class="text-center mb-6">
+          <div class="w-20 h-20 rounded-full mx-auto mb-4 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">${(profile.username || 'A').charAt(0).toUpperCase()}</div>
+          <h2 class="text-2xl font-bold text-white mb-2">${profile.username || 'Аноним'}</h2>
+        </div>
+        <div class="space-y-3 mb-6">
+          <div class="bg-gray-800 rounded-xl p-3 border border-gray-600 flex items-center space-x-3">
+            <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center"><span class="text-white font-bold text-sm">🏆</span></div>
+            <div class="flex-1"><span class="text-gray-400 text-sm">Ранг</span></div>
+            <span class="text-white font-bold">#${profile.rank || '-'}</span>
+          </div>
+          <div class="bg-gray-800 rounded-xl p-3 border border-gray-600 flex items-center space-x-3">
+            <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center"><span class="text-white text-sm">⭐</span></div>
+            <div class="flex-1"><span class="text-gray-400 text-sm">Звезды</span></div>
+            <span class="text-white font-bold">${profile.total_amount_stars || 0}</span>
+          </div>
+        </div>
+        <button id="openInTelegram" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-semibold transition-colors mb-4">Открыть в Telegram</button>
+        <div>
+          <h3 class="text-gray-400 text-sm font-semibold mb-3 uppercase tracking-wide">ДОСТИЖЕНИЯ ПОЛЬЗОВАТЕЛЯ</h3>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="w-16 h-16 bg-gray-800 rounded-xl flex items-center justify-center border border-gray-600"><span class="text-2xl">⚡</span></div>
+            <div class="w-16 h-16 bg-gray-800 rounded-xl flex items-center justify-center border border-gray-600"><span class="text-2xl">💎</span></div>
+            <div class="w-16 h-16 bg-gray-800 rounded-xl flex items-center justify-center border border-gray-600"><span class="text-2xl">🏆</span></div>
+            <div class="w-16 h-16 bg-gray-800 rounded-xl flex items-center justify-center border border-gray-600"><span class="text-2xl">⭐</span></div>
+            <div class="w-16 h-16 bg-gray-800 rounded-xl flex items-center justify-center border border-gray-600"><span class="text-2xl">🎯</span></div>
+            <div class="w-16 h-16 bg-gray-800 rounded-xl flex items-center justify-center border border-gray-600"><span class="text-2xl">💰</span></div>
+          </div>
+        </div>
+      </div>
+    `;
+    // Кнопка Telegram
+    document.getElementById('openInTelegram').onclick = () => openUserInTelegram(profile.username);
+  } catch (err) {
+    profileContent.innerHTML = `<div class='text-center py-8 text-red-500'>Ошибка: ${err.message}</div>`;
+  }
 }
 
 // Initialize create form when DOM is ready

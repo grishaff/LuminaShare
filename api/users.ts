@@ -39,7 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === "POST") {
-    const { tgId, role, displayName, avatarUrl, bio, walletAddress } = req.body ?? {};
+    const { tgId, role, displayName, avatarUrl, bio, walletAddress, username } = req.body ?? {};
 
     if (!tgId || !displayName) {
       res.status(400).json({ error: "tgId and displayName are required" });
@@ -56,7 +56,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       display_name: displayName,
     };
 
-    // Добавляем опциональные поля только если они переданы
+    // Добавляем username если есть
+    if (username) userData.username = username;
     if (avatarUrl) userData.avatar_url = avatarUrl;
     if (bio) userData.bio = bio;
     if (walletAddress) userData.wallet_address = walletAddress;
