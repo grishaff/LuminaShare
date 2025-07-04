@@ -421,7 +421,9 @@ async function loadFeed() {
 
 // Create announcement functionality
 function initCreateForm() {
-  const createForm = document.getElementById("createForm");
+  const form = document.getElementById("createForm");
+  if (!form) return;
+
   const imageInput = document.getElementById("imageInput");
   
   // Image input preview
@@ -436,7 +438,7 @@ function initCreateForm() {
     }
   });
   
-     createForm.addEventListener("submit", async (e) => {
+     form.addEventListener("submit", async (e) => {
   e.preventDefault();
      
      // Check if user profile is loaded
@@ -450,7 +452,7 @@ function initCreateForm() {
        return;
      }
     
-    const formData = new FormData(createForm);
+    const formData = new FormData(form);
     const title = formData.get("title");
     const description = formData.get("description");
     const wallet = formData.get("wallet");
@@ -461,7 +463,7 @@ function initCreateForm() {
       return;
     }
 
-    const submitBtn = createForm.querySelector('button[type="submit"]');
+    const submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
     submitBtn.textContent = "Публикуем...";
 
@@ -490,7 +492,7 @@ function initCreateForm() {
       if (annResp.status !== 201) throw new Error(annJson.error || "Ошибка создания объявления");
 
       // 3) Success
-      createForm.reset();
+      form.reset();
       announcements = []; // Reset to reload
       switchTab('feed');
       
