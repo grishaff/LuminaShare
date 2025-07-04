@@ -850,8 +850,7 @@ function showStarsModal(announcement, options) {
   optionsEl.querySelectorAll('.stars-option').forEach(btn => {
     btn.addEventListener('click', () => {
       const stars = parseInt(btn.dataset.stars);
-      hideStarsModal();
-      sendStarsDonation(announcement, stars);
+      showStarsConfirmation(announcement, stars);
     });
   });
 
@@ -863,52 +862,42 @@ function hideStarsModal() {
   const modal = document.getElementById('starsModal');
   modal.classList.add('hidden');
   modal.classList.remove('flex');
+  
+  // Сбрасываем состояние модального окна
+  document.getElementById('starsOptions').classList.remove('hidden');
+  document.getElementById('starsConfirmation').classList.add('hidden');
 }
 
-async function sendStarsDonation(announcement, stars) {
+function showStarsConfirmation(announcement, stars) {
+  // Скрываем варианты выбора
+  document.getElementById('starsOptions').classList.add('hidden');
+  
+  // Показываем подтверждение
+  const confirmationEl = document.getElementById('starsConfirmation');
+  const amountEl = document.getElementById('confirmStarsAmount');
+  const targetEl = document.getElementById('confirmStarsTarget');
+  
+  amountEl.textContent = `${stars} ⭐ звезд`;
+  targetEl.textContent = `для "${announcement.title}"`;
+  
+  confirmationEl.classList.remove('hidden');
+  
+  // Сохраняем данные для подтверждения
+  confirmationEl.dataset.announcementId = announcement.id;
+  confirmationEl.dataset.stars = stars;
+}
+
+async function sendStarsDonation(announcementId, stars) {
   try {
     if (!tg || !tg.initDataUnsafe?.user) {
       throw new Error("Пользователь не авторизован");
     }
 
-    console.log(`Sending ${stars} stars for announcement:`, announcement.id);
+    console.log(`Processing ${stars} stars donation for announcement:`, announcementId);
 
-    // Используем Telegram Payment API для звезд
-    if (tg.openInvoice) {
-      // Создаем инвойс для Telegram Stars
-      const invoice = {
-        title: `Поддержка: ${announcement.title}`,
-        description: `Пожертвование ${stars} звезд`,
-        payload: JSON.stringify({
-          type: 'stars_donation',
-          announcement_id: announcement.id,
-          donor_tg_id: tg.initDataUnsafe.user.id,
-          amount_stars: stars
-        }),
-        provider_token: '', // Для звезд токен не нужен
-        currency: 'XTR', // Telegram Stars currency
-        prices: [{ amount: stars, label: `${stars} звезд` }]
-      };
-
-      // Открываем инвойс
-      tg.openInvoice(invoice.payload, (status) => {
-        console.log('Payment status:', status);
-        if (status === 'paid') {
-          // Платеж успешен, записываем в базу
-          recordStarsDonation(announcement.id, tg.initDataUnsafe.user.id, stars);
-        } else if (status === 'cancelled') {
-          console.log('Payment cancelled by user');
-        } else {
-          console.error('Payment failed:', status);
-        }
-      });
-    } else {
-      // Fallback для тестирования
-      const confirmed = confirm(`Отправить ${stars} звезд для "${announcement.title}"?`);
-      if (confirmed) {
-        await recordStarsDonation(announcement.id, tg.initDataUnsafe.user.id, stars);
-      }
-    }
+    // Записываем донат в базу данных (симуляция успешного платежа)
+    await recordStarsDonation(announcementId, tg.initDataUnsafe.user.id, stars);
+    
   } catch (err) {
     console.error("Error sending stars donation:", err);
     if (tg) {
@@ -958,13 +947,32 @@ async function recordStarsDonation(announcementId, donorTgId, amountStars) {
 function initStarsModal() {
   const modal = document.getElementById('starsModal');
   const closeBtn = document.getElementById('closeStarsModal');
+  const confirmBtn = document.getElementById('confirmStarsPayment');
+  const backBtn = document.getElementById('backToStarsOptions');
 
+  // Закрытие модального окна
   closeBtn.addEventListener('click', hideStarsModal);
   
   modal.addEventListener('click', (e) => {
     if (e.target === modal) {
       hideStarsModal();
     }
+  });
+
+  // Подтверждение платежа
+  confirmBtn.addEventListener('click', async () => {
+    const confirmationEl = document.getElementById('starsConfirmation');
+    const announcementId = confirmationEl.dataset.announcementId;
+    const stars = parseInt(confirmationEl.dataset.stars);
+    
+    hideStarsModal();
+    await sendStarsDonation(announcementId, stars);
+  });
+
+  // Кнопка "Назад"
+  backBtn.addEventListener('click', () => {
+    document.getElementById('starsConfirmation').classList.add('hidden');
+    document.getElementById('starsOptions').classList.remove('hidden');
   });
 }
 
