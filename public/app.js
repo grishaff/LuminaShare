@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initCreateForm();
   initConnectWalletModal();
   initStarsModal();
+  initUserProfileModal();
   
   // Set initial active tab
   switchTab('feed');
@@ -102,16 +103,16 @@ function switchTab(tabName) {
 
 // Info banner logic
 function initInfoBanner() {
-  const bannerEl = document.getElementById("infoBanner");
-  const closeBannerBtn = document.getElementById("closeBanner");
+const bannerEl = document.getElementById("infoBanner");
+const closeBannerBtn = document.getElementById("closeBanner");
   
-  if (localStorage.getItem("bannerClosed")) {
+if (localStorage.getItem("bannerClosed")) {
+  bannerEl.style.display = "none";
+} else {
+  closeBannerBtn.addEventListener("click", () => {
     bannerEl.style.display = "none";
-  } else {
-    closeBannerBtn.addEventListener("click", () => {
-      bannerEl.style.display = "none";
-      localStorage.setItem("bannerClosed", "1");
-    });
+    localStorage.setItem("bannerClosed", "1");
+  });
   }
 }
 
@@ -334,9 +335,9 @@ async function loadFeed() {
     }
     
     feed.innerHTML = "";
-    
+
          announcements.forEach((item, index) => {
-       const card = document.createElement("article");
+      const card = document.createElement("article");
        card.className = "glass-card rounded-2xl shadow-lg mb-4 transition-all hover:shadow-xl hover:-translate-y-1 slide-up overflow-hidden";
        card.style.animationDelay = `${index * 0.1}s`;
 
@@ -344,7 +345,7 @@ async function loadFeed() {
        const shortDescription = item.description ? 
          (item.description.length > 80 ? item.description.substring(0, 80) + '...' : item.description) : '';
 
-       card.innerHTML = `
+      card.innerHTML = `
          <div class="flex items-start p-4 space-x-4">
            <!-- Image Section -->
            <div class="relative flex-shrink-0 group">
@@ -383,21 +384,21 @@ async function loadFeed() {
                </button>
              </div>
            </div>
-         </div>
-         
+        </div>
+
          <!-- Progress indicator (visual element) -->
          <div class="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-20"></div>`;
 
        // Image click to open viewer
-       const img = card.querySelector("img");
-       img.addEventListener("click", (e) => {
-         e.stopPropagation();
+      const img = card.querySelector("img");
+      img.addEventListener("click", (e) => {
+        e.stopPropagation();
          const viewer = document.getElementById("viewer");
          const viewerImg = document.getElementById("viewerImg");
-         viewerImg.src = item.image_url;
-         viewer.classList.remove("hidden");
-         viewer.classList.add("flex");
-       });
+        viewerImg.src = item.image_url;
+        viewer.classList.remove("hidden");
+        viewer.classList.add("flex");
+      });
 
        // Author button click
        const authorBtn = card.querySelector(".author-btn");
@@ -411,10 +412,10 @@ async function loadFeed() {
        donateBtn.addEventListener("click", (e) => {
          e.stopPropagation();
          showDonateModal(item);
-       });
+      });
 
-       feed.appendChild(card);
-     });
+      feed.appendChild(card);
+    });
   } catch (err) {
     feed.innerHTML = `<p class='text-red-300 text-center py-8'>Ошибка загрузки: ${err}</p>`;
   }
@@ -438,7 +439,7 @@ function initCreateForm() {
   });
   
      createForm.addEventListener("submit", async (e) => {
-     e.preventDefault();
+  e.preventDefault();
      
      // Check if user profile is loaded
      if (!userProfile) {
@@ -471,14 +472,14 @@ function initCreateForm() {
       const imgFormData = new FormData();
       imgFormData.append("file", imageFile);
       const upResp = await fetch("/api/uploadImage", { method: "POST", body: imgFormData });
-      const upJson = await upResp.json();
+    const upJson = await upResp.json();
       if (!upJson.ok) throw new Error("Ошибка загрузки изображения");
 
       // 2) Create announcement
       const annResp = await fetch("/api/announcements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           title, 
           description, 
           imageUrl: upJson.url, 
@@ -540,31 +541,65 @@ async function loadRanking() {
     }
 
     rankingList.innerHTML = ranking.map((donor, index) => {
-      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}`;
-      const rankBadge = index < 3 ? medal : `<span class="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold text-sm">${index + 1}</span>`;
+      const position = index + 1;
+      
+      // Определяем количество звезд для отображения
+      const starsCount = donor.total_amount_stars || 0;
+      const formattedStars = starsCount >= 1000 ? 
+        `${(starsCount / 1000).toFixed(1)}K` : 
+        starsCount.toString();
       
       return `
-        <div class="flex items-center justify-between p-4 bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors slide-up border border-gray-700" style="animation-delay: ${index * 0.1}s">
-          <div class="flex items-center space-x-4">
-            <div class="w-12 h-12 flex items-center justify-center">
-              <div class="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
-                <span class="text-white font-bold text-lg">${(donor.first_name || 'A').charAt(0)}</span>
+        <div class="flex items-center justify-between py-3 px-2 hover:bg-gray-800/30 transition-colors cursor-pointer ranking-item" 
+             data-user-id="${donor.donor_tg_id}" 
+             data-user-name="${donor.first_name || 'Аноним'}"
+             data-user-position="${position}"
+             data-user-stars="${starsCount}"
+             style="animation-delay: ${index * 0.05}s">
+          
+          <div class="flex items-center space-x-3">
+            <!-- Avatar -->
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+              ${(donor.first_name || 'A').charAt(0).toUpperCase()}
+            </div>
+            
+            <!-- User Info -->
+            <div class="flex flex-col">
+              <div class="flex items-center space-x-2">
+                <span class="text-white font-medium">${donor.first_name || 'Аноним'}</span>
+                ${donor.total_amount_stars >= 1000 ? '<span class="text-blue-400">🔵</span>' : ''}
+              </div>
+              <div class="flex items-center space-x-1">
+                <span class="text-blue-400 text-sm">🔵</span>
+                <span class="text-gray-300 text-sm font-medium">${formattedStars}</span>
               </div>
             </div>
-            <div>
-              <p class="font-semibold text-white">${donor.first_name || 'Аноним'}</p>
-              <p class="text-sm text-gray-400">${donor.total_amount_stars ? `⭐ ${donor.total_amount_stars}` : ''}${donor.total_amount_stars && donor.total_amount_ton ? ' • ' : ''}${donor.total_amount_ton ? `${donor.total_amount_ton} TON` : ''}</p>
-            </div>
           </div>
-          <div class="flex items-center space-x-3">
-            <div class="text-right">
-              <p class="font-bold text-yellow-400 text-lg">${donor.donation_count}</p>
-            </div>
-            <div class="text-2xl">${rankBadge}</div>
+          
+          <!-- Position -->
+          <div class="text-right">
+            <span class="text-white font-bold text-lg">${position}</span>
           </div>
         </div>
       `;
     }).join('');
+    
+    // Добавляем обработчики кликов на пользователей
+    document.querySelectorAll('.ranking-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const userId = item.dataset.userId;
+        const userName = item.dataset.userName;
+        const position = item.dataset.userPosition;
+        const stars = item.dataset.userStars;
+        
+        showUserProfile({
+          tg_id: userId,
+          first_name: userName,
+          position: position,
+          total_amount_stars: stars
+        });
+      });
+    });
     
   } catch (err) {
     rankingList.innerHTML = `<p class="text-red-500 text-center py-8">Ошибка: ${err}</p>`;
@@ -698,7 +733,7 @@ async function loadProfile() {
             console.error("Debug fetch error:", err);
             if (tg) {
               tg.showAlert("Ошибка получения debug информации");
-            } else {
+    } else {
               alert("Ошибка получения debug информации");
             }
           }
@@ -807,8 +842,87 @@ async function loadProfile() {
 }
 
 // Helper functions
-function showUserProfile(userId) {
-  window.location.href = `/profile.html?id=${userId}`;
+function showUserProfile(userData) {
+  const modal = document.getElementById('userProfileModal');
+  const avatar = document.getElementById('profileAvatar');
+  const name = document.getElementById('profileName');
+  const rank = document.getElementById('profileRank');
+  const stars = document.getElementById('profileStars');
+  
+  // Заполняем данные профиля
+  avatar.textContent = (userData.first_name || 'A').charAt(0).toUpperCase();
+  name.textContent = userData.first_name || 'Аноним';
+  rank.textContent = `#${userData.position}`;
+  
+  // Форматируем количество звезд
+  const starsCount = parseInt(userData.total_amount_stars) || 0;
+  const formattedStars = starsCount >= 1000 ? 
+    `${(starsCount / 1000).toFixed(1)}K` : 
+    starsCount.toString();
+  stars.textContent = formattedStars;
+  
+  // Сохраняем ID для функции "Открыть в Telegram"
+  modal.dataset.userId = userData.tg_id;
+  
+  // Показываем модальное окно
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function hideUserProfile() {
+  const modal = document.getElementById('userProfileModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function openUserInTelegram(userId) {
+  if (!userId) return;
+  
+  try {
+    // Формируем ссылку на пользователя в Telegram
+    const telegramUrl = `https://t.me/user${userId}`;
+    
+    if (tg && tg.openLink) {
+      // Используем Telegram WebApp API для открытия ссылки
+      tg.openLink(telegramUrl);
+    } else if (window.open) {
+      // Fallback для браузера
+      window.open(telegramUrl, '_blank');
+    } else {
+      // Последний fallback
+      window.location.href = telegramUrl;
+    }
+  } catch (err) {
+    console.error('Error opening Telegram:', err);
+    if (tg) {
+      tg.showAlert('Не удалось открыть профиль в Telegram');
+    } else {
+      alert('Не удалось открыть профиль в Telegram');
+    }
+  }
+}
+
+function initUserProfileModal() {
+  const modal = document.getElementById('userProfileModal');
+  const closeBtn = document.getElementById('closeUserProfile');
+  const backBtn = document.getElementById('backFromProfile');
+  const openTgBtn = document.getElementById('openInTelegram');
+
+  // Закрытие модального окна
+  closeBtn.addEventListener('click', hideUserProfile);
+  backBtn.addEventListener('click', hideUserProfile);
+  
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      hideUserProfile();
+    }
+  });
+
+  // Открытие в Telegram
+  openTgBtn.addEventListener('click', () => {
+    const userId = modal.dataset.userId;
+    openUserInTelegram(userId);
+  });
 }
 
 function showDonateModal(announcement) {
