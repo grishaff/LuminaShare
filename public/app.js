@@ -40,10 +40,14 @@ document.addEventListener('DOMContentLoaded', () => {
   initStarsModal();
   initUserProfileModal();
   
-  // Set initial active tab
-  switchTab('feed');
-  
-  loadInitialData();
+  // Проверяем, находимся ли мы на странице profile.html
+  if (window.location.pathname.includes('profile.html')) {
+    loadProfileByUsername();
+  } else {
+    // Set initial active tab
+    switchTab('feed');
+    loadInitialData();
+  }
 });
 
 // Navigation system
@@ -886,6 +890,12 @@ function initUserProfileModal() {
   const backBtn = document.getElementById('backFromProfile');
   const openTgBtn = document.getElementById('openInTelegram');
 
+  // Проверяем существование всех необходимых элементов
+  if (!modal || !closeBtn || !backBtn || !openTgBtn) {
+    console.log('User profile modal elements not found, skipping initialization');
+    return;
+  }
+
   // Закрытие модального окна
   closeBtn.addEventListener('click', hideUserProfile);
   backBtn.addEventListener('click', hideUserProfile);
@@ -928,6 +938,12 @@ function showStarsModal(announcement, options) {
   const titleEl = document.getElementById('starsAnnouncementTitle');
   const optionsEl = document.getElementById('starsOptions');
 
+  // Проверяем существование всех необходимых элементов
+  if (!modal || !titleEl || !optionsEl) {
+    console.log('Stars modal elements not found, cannot show modal');
+    return;
+  }
+
   titleEl.textContent = `Поддержать: ${announcement.title}`;
   
   // Создаем кнопки для выбора звезд
@@ -952,23 +968,35 @@ function showStarsModal(announcement, options) {
 
 function hideStarsModal() {
   const modal = document.getElementById('starsModal');
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
+  const optionsEl = document.getElementById('starsOptions');
+  const confirmationEl = document.getElementById('starsConfirmation');
+  
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
   
   // Сбрасываем состояние модального окна
-  document.getElementById('starsOptions').classList.remove('hidden');
-  document.getElementById('starsConfirmation').classList.add('hidden');
+  if (optionsEl) optionsEl.classList.remove('hidden');
+  if (confirmationEl) confirmationEl.classList.add('hidden');
 }
 
 function showStarsConfirmation(announcement, stars) {
-  // Скрываем варианты выбора
-  document.getElementById('starsOptions').classList.add('hidden');
-  
-  // Показываем подтверждение
+  const optionsEl = document.getElementById('starsOptions');
   const confirmationEl = document.getElementById('starsConfirmation');
   const amountEl = document.getElementById('confirmStarsAmount');
   const targetEl = document.getElementById('confirmStarsTarget');
   
+  // Проверяем существование всех необходимых элементов
+  if (!optionsEl || !confirmationEl || !amountEl || !targetEl) {
+    console.log('Stars confirmation elements not found');
+    return;
+  }
+  
+  // Скрываем варианты выбора
+  optionsEl.classList.add('hidden');
+  
+  // Показываем подтверждение
   amountEl.textContent = `${stars} ⭐ звезд`;
   targetEl.textContent = `для "${announcement.title}"`;
   
@@ -1042,6 +1070,12 @@ function initStarsModal() {
   const confirmBtn = document.getElementById('confirmStarsPayment');
   const backBtn = document.getElementById('backToStarsOptions');
 
+  // Проверяем существование всех необходимых элементов
+  if (!modal || !closeBtn || !confirmBtn || !backBtn) {
+    console.log('Stars modal elements not found, skipping initialization');
+    return;
+  }
+
   // Закрытие модального окна
   closeBtn.addEventListener('click', hideStarsModal);
   
@@ -1054,6 +1088,8 @@ function initStarsModal() {
   // Подтверждение платежа
   confirmBtn.addEventListener('click', async () => {
     const confirmationEl = document.getElementById('starsConfirmation');
+    if (!confirmationEl) return;
+    
     const announcementId = confirmationEl.dataset.announcementId;
     const stars = parseInt(confirmationEl.dataset.stars);
     
@@ -1063,22 +1099,29 @@ function initStarsModal() {
 
   // Кнопка "Назад"
   backBtn.addEventListener('click', () => {
-    document.getElementById('starsConfirmation').classList.add('hidden');
-    document.getElementById('starsOptions').classList.remove('hidden');
+    const confirmationEl = document.getElementById('starsConfirmation');
+    const optionsEl = document.getElementById('starsOptions');
+    
+    if (confirmationEl) confirmationEl.classList.add('hidden');
+    if (optionsEl) optionsEl.classList.remove('hidden');
   });
 }
 
 // Wallet connection functions
 function showConnectWalletModal() {
   const modal = document.getElementById('connectWalletModal');
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
 }
 
 function hideConnectWalletModal() {
   const modal = document.getElementById('connectWalletModal');
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
 }
 
 async function connectToTelegramWallet() {
@@ -1236,6 +1279,11 @@ async function loadProfileByUsername() {
   if (!username) return;
 
   const profileContent = document.getElementById("profileContent");
+  if (!profileContent) {
+    console.log('Profile content element not found');
+    return;
+  }
+  
   profileContent.innerHTML = `<div class='text-center py-8 text-white'>Загрузка профиля...</div>`;
 
   try {
