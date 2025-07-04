@@ -62,18 +62,14 @@ function switchTab(tabName) {
   
   // Update nav visual state
   document.querySelectorAll('.nav-tab').forEach(tab => {
-    tab.classList.remove('active', 'tab-active', 'text-red-500');
+    tab.classList.remove('text-red-500');
     tab.classList.add('text-gray-400');
-    const icon = tab.querySelector('.nav-icon');
-    if (icon) icon.classList.remove('active');
   });
   
   const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
   if (activeTab) {
-    activeTab.classList.add('active', 'tab-active', 'text-red-500');
+    activeTab.classList.add('text-red-500');
     activeTab.classList.remove('text-gray-400');
-    const activeIcon = activeTab.querySelector('.nav-icon');
-    if (activeIcon) activeIcon.classList.add('active');
   }
   
   // Hide all screens
