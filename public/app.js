@@ -729,8 +729,13 @@ async function loadProfile() {
           <div class="p-4 bg-gray-50 rounded-xl">
             <h3 class="font-semibold text-gray-900 mb-2">💰 TON Кошелёк</h3>
             ${profile.wallet_address ? 
-              `<p class="font-mono text-sm text-gray-700 break-all">${profile.wallet_address}</p>` :
-              `<button id="addWalletBtn" class="text-indigo-600 hover:text-indigo-800 font-medium">+ Добавить кошелёк</button>`
+              `<div>
+                <p class="font-mono text-sm text-gray-700 break-all mb-2">${profile.wallet_address}</p>
+                <button id="disconnectWalletBtn" class="text-red-600 hover:text-red-800 font-medium text-sm">Отключить кошелёк</button>
+              </div>` :
+              `<button id="connectWalletBtn" class="w-full px-4 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors">
+                🔗 Подключить кошелёк
+              </button>`
             }
           </div>
           
@@ -753,9 +758,14 @@ async function loadProfile() {
       </div>`;
     
     // Add wallet button functionality
-    const addWalletBtn = document.getElementById('addWalletBtn');
-    if (addWalletBtn) {
-      addWalletBtn.addEventListener('click', showAddWalletModal);
+    const connectWalletBtn = document.getElementById('connectWalletBtn');
+    if (connectWalletBtn) {
+      connectWalletBtn.addEventListener('click', showConnectWalletModal);
+    }
+    
+    const disconnectWalletBtn = document.getElementById('disconnectWalletBtn');
+    if (disconnectWalletBtn) {
+      disconnectWalletBtn.addEventListener('click', disconnectWallet);
     }
     
   } catch (err) {
@@ -790,23 +800,69 @@ function showDonateModal(announcement) {
   alert(`Донат для "${announcement.title}" будет добавлен после интеграции TON Connect`);
 }
 
-async function showAddWalletModal() {
-  const wallet = prompt("Введите адрес вашего TON кошелька (UQA...):");
-  if (!wallet || !wallet.trim()) return;
-  
-  // Basic wallet validation
-  if (!wallet.startsWith('UQ') && !wallet.startsWith('EQ')) {
-    alert("Неверный формат кошелька. Кошелёк должен начинаться с UQ или EQ");
-    return;
+// Wallet connection functions
+function showConnectWalletModal() {
+  const modal = document.getElementById('connectWalletModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function hideConnectWalletModal() {
+  const modal = document.getElementById('connectWalletModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+async function connectToTelegramWallet() {
+  try {
+    // Используем Telegram WebApp API для подключения кошелька
+    if (tg && tg.openTelegramLink) {
+      // Показываем запрос разрешения как в Major
+      const result = await new Promise((resolve) => {
+        if (tg.showConfirm) {
+          tg.showConfirm(
+            "LuminaShare запрашивает доступ к TON Space\n\nПриложение сможет видеть адрес TON, баланс и историю активности.",
+            (confirmed) => resolve(confirmed)
+          );
+        } else {
+          // Fallback для старых версий
+          const confirmed = confirm("LuminaShare запрашивает доступ к TON Space\n\nПриложение сможет видеть адрес TON, баланс и историю активности.\n\nПодключить?");
+          resolve(confirmed);
+        }
+      });
+      
+      if (result) {
+        // Открываем Telegram Wallet
+        tg.openTelegramLink("https://t.me/wallet");
+        
+        // В реальной интеграции здесь бы был TON Connect
+        // Пока симулируем получение адреса
+        setTimeout(() => {
+          simulateWalletConnection("UQCQ...NqMC"); // Примерный адрес
+        }, 2000);
+      }
+    } else {
+      // Fallback для браузера
+      alert("Функция доступна только в Telegram");
+    }
+  } catch (err) {
+    console.error("Error connecting wallet:", err);
+    if (tg) {
+      tg.showAlert("Ошибка подключения кошелька");
+    } else {
+      alert("Ошибка подключения кошелька");
+    }
   }
-  
+}
+
+async function simulateWalletConnection(walletAddress) {
   try {
     const resp = await fetch("/api/users", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         tgId: user.id,
-        walletAddress: wallet.trim()
+        walletAddress: walletAddress
       })
     });
     
@@ -816,13 +872,15 @@ async function showAddWalletModal() {
     userProfile = data.user;
     updateWalletStatus();
     loadProfile(); // Reload profile to show updated wallet
+    hideConnectWalletModal();
     
     if (tg) {
-      tg.showAlert("Кошелёк успешно привязан!");
+      tg.showAlert("Кошелёк успешно подключен!");
     } else {
-      alert("Кошелёк успешно привязан!");
+      alert("Кошелёк успешно подключен!");
     }
   } catch (err) {
+    console.error("Error saving wallet:", err);
     if (tg) {
       tg.showAlert(`Ошибка: ${err.message}`);
     } else {
@@ -831,7 +889,78 @@ async function showAddWalletModal() {
   }
 }
 
+async function disconnectWallet() {
+  try {
+    const confirmed = confirm("Отключить кошелёк?");
+    if (!confirmed) return;
+    
+    const resp = await fetch("/api/users", {
+      method: "PUT", 
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tgId: user.id,
+        walletAddress: null
+      })
+    });
+    
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error);
+    
+    userProfile = data.user;
+    updateWalletStatus();
+    loadProfile(); // Reload profile
+    
+    if (tg) {
+      tg.showAlert("Кошелёк отключен");
+    } else {
+      alert("Кошелёк отключен");
+    }
+  } catch (err) {
+    console.error("Error disconnecting wallet:", err);
+    if (tg) {
+      tg.showAlert(`Ошибка: ${err.message}`);
+    } else {
+      alert(`Ошибка: ${err.message}`);
+    }
+  }
+}
+
+function initConnectWalletModal() {
+  const modal = document.getElementById('connectWalletModal');
+  const closeBtn = document.getElementById('closeConnectModal');
+  const telegramWalletBtn = document.getElementById('openTelegramWallet');
+  const walletOptions = document.querySelectorAll('.wallet-option');
+
+  closeBtn.addEventListener('click', hideConnectWalletModal);
+  
+  telegramWalletBtn.addEventListener('click', () => {
+    hideConnectWalletModal();
+    connectToTelegramWallet();
+  });
+  
+  walletOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      const walletType = option.dataset.wallet;
+      hideConnectWalletModal();
+      
+      if (walletType === 'other') {
+        alert("Другие кошельки будут добавлены в следующих версиях");
+      } else {
+        alert(`Подключение ${walletType} будет добавлено в следующих версиях`);
+      }
+    });
+  });
+
+  // Закрытие при клике вне модального окна
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      hideConnectWalletModal();
+    }
+  });
+}
+
 // Initialize create form when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   initCreateForm();
+  initConnectWalletModal();
 }); 

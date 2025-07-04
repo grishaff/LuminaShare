@@ -201,6 +201,58 @@
       </div>
     </nav>
 
+    <!-- Connect Wallet Modal -->
+    <div id="connectWalletModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
+      <div class="glass-card rounded-2xl p-6 w-11/12 max-w-md shadow-xl">
+        <div class="text-center mb-6">
+          <h3 class="text-xl font-bold text-gray-900 mb-2">Connect your wallet</h3>
+          <p class="text-gray-600 text-sm">Open Wallet in Telegram or select your wallet to connect</p>
+        </div>
+        
+        <!-- Open Wallet in Telegram Button -->
+        <button id="openTelegramWallet" class="w-full bg-blue-500 text-white px-4 py-3 rounded-xl font-semibold mb-4 flex items-center justify-center gap-3 hover:bg-blue-600 transition-colors">
+          <span class="text-xl">💼</span>
+          Open Wallet in Telegram
+          <span class="text-xl">✈️</span>
+        </button>
+        
+        <!-- Other Wallets -->
+        <div class="grid grid-cols-4 gap-3 mb-6">
+          <button class="wallet-option flex flex-col items-center p-3 rounded-xl hover:bg-gray-100 transition-colors" data-wallet="tonkeeper">
+            <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mb-2">
+              <span class="text-white font-bold">T</span>
+            </div>
+            <span class="text-xs text-gray-700">Tonkeeper</span>
+          </button>
+          
+          <button class="wallet-option flex flex-col items-center p-3 rounded-xl hover:bg-gray-100 transition-colors" data-wallet="mytonwallet">
+            <div class="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center mb-2">
+              <span class="text-white font-bold">M</span>
+            </div>
+            <span class="text-xs text-gray-700">MyTonWallet</span>
+          </button>
+          
+          <button class="wallet-option flex flex-col items-center p-3 rounded-xl hover:bg-gray-100 transition-colors" data-wallet="tonhub">
+            <div class="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center mb-2">
+              <span class="text-white font-bold">H</span>
+            </div>
+            <span class="text-xs text-gray-700">Tonhub</span>
+          </button>
+          
+          <button class="wallet-option flex flex-col items-center p-3 rounded-xl hover:bg-gray-100 transition-colors" data-wallet="other">
+            <div class="w-12 h-12 bg-gray-500 rounded-xl flex items-center justify-center mb-2">
+              <span class="text-white font-bold">+</span>
+            </div>
+            <span class="text-xs text-gray-700">View all</span>
+          </button>
+        </div>
+        
+        <button id="closeConnectModal" class="w-full px-4 py-2 text-gray-600 rounded-xl hover:bg-gray-100 transition-colors">
+          Отмена
+        </button>
+      </div>
+    </div>
+
     <!-- Image viewer overlay -->
     <div id="viewer" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden items-center justify-center z-50">
       <img id="viewerImg" class="max-w-full max-h-full rounded-lg shadow-2xl" />
