@@ -12,14 +12,13 @@ if (tg) {
   const bannerEl = document.getElementById("infoBanner");
   if (bannerEl) bannerEl.style.display = "none";
   
-  // Show user info in header
+  // Show user info in header (только если есть нужные элементы)
   if (user) {
     const userInfo = document.getElementById('userInfo');
     const userAvatar = document.getElementById('userAvatar');
-    
-    if (user.photo_url) {
+    if (userAvatar && user.photo_url) {
       userAvatar.src = user.photo_url;
-      userInfo.classList.remove('hidden');
+      if (userInfo) userInfo.classList.remove('hidden');
     }
   }
 } else {
