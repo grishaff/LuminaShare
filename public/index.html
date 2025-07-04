@@ -13,7 +13,7 @@
       .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
       .fade-in { animation: fadeIn 0.5s ease-out; }
       .slide-up { animation: slideUp 0.3s ease-out; }
-      .tab-active { color: #6366f1; background: rgba(99, 102, 241, 0.1); }
+      .tab-active { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
       
       @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
@@ -26,9 +26,9 @@
       }
       
       .glass-card {
-        background: rgba(255, 255, 255, 0.95);
+        background: rgba(20, 20, 20, 0.95);
         backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
       }
       
       .nav-icon {
@@ -58,22 +58,22 @@
       }
     </style>
   </head>
-  <body class="min-h-screen pb-20" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+  <body class="min-h-screen pb-20 bg-black text-white">
     
     <!-- Header -->
     <header class="glass-card shadow-lg p-4 sticky top-0 z-40">
       <div class="flex items-center justify-between max-w-md mx-auto">
         <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+          <div class="w-8 h-8 bg-gradient-to-r from-red-500 to-red-600 rounded-lg flex items-center justify-center">
             <span class="text-white font-bold text-sm">L</span>
           </div>
-          <h1 class="text-xl font-bold text-gray-900">LuminaShare</h1>
+          <h1 class="text-xl font-bold text-white">LuminaShare</h1>
         </div>
         <div class="flex items-center space-x-2">
           <div id="userInfo" class="hidden">
             <img id="userAvatar" class="w-8 h-8 rounded-full border-2 border-white shadow-md" />
           </div>
-          <div id="walletStatus" class="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-600 hidden">
+          <div id="walletStatus" class="px-2 py-1 text-xs rounded-full bg-orange-900 text-orange-300 hidden">
             Нет кошелька
           </div>
         </div>
@@ -86,15 +86,15 @@
       <!-- Feed Screen -->
       <div id="feedScreen" class="screen active">
         <!-- Info banner -->
-        <div id="infoBanner" class="bg-gradient-to-r from-blue-50 to-indigo-50 text-indigo-800 p-4 mx-4 mt-4 rounded-xl flex items-center gap-3 glass-card">
-          <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <span class="text-indigo-600">💝</span>
+        <div id="infoBanner" class="bg-gray-900 border border-gray-700 text-white p-4 mx-4 mt-4 rounded-xl flex items-center gap-3">
+          <div class="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <span class="text-white">💝</span>
           </div>
           <div class="flex-1">
-            <p class="text-sm font-medium">100% перевода уходит получателю</p>
-            <p class="text-xs text-indigo-600">Помогите тем, кому нужна поддержка</p>
+            <p class="text-sm font-medium text-white">100% перевода уходит получателю</p>
+            <p class="text-xs text-gray-400">Помогите тем, кому нужна поддержка</p>
           </div>
-          <button id="closeBanner" class="text-indigo-400 hover:text-indigo-600 text-xl">×</button>
+          <button id="closeBanner" class="text-gray-400 hover:text-white text-xl">×</button>
         </div>
 
         <!-- Feed -->
@@ -175,25 +175,25 @@
     </div>
 
     <!-- Bottom Navigation -->
-    <nav class="fixed bottom-0 left-0 right-0 glass-card border-t border-gray-200 bg-white/95 backdrop-blur-md">
+    <nav class="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-800 backdrop-blur-md">
       <div class="flex justify-around items-center py-2 max-w-md mx-auto">
         
-        <button class="nav-tab active flex flex-col items-center py-2 px-4 rounded-lg transition-all" data-tab="feed">
+        <button class="nav-tab active flex flex-col items-center py-2 px-4 rounded-lg transition-all text-red-500" data-tab="feed">
           <span class="nav-icon text-xl mb-1">🏠</span>
           <span class="text-xs font-medium">Лента</span>
         </button>
         
-        <button class="nav-tab flex flex-col items-center py-2 px-4 rounded-lg transition-all" data-tab="create">
+        <button class="nav-tab flex flex-col items-center py-2 px-4 rounded-lg transition-all text-gray-400 hover:text-white" data-tab="create">
           <span class="nav-icon text-xl mb-1">➕</span>
           <span class="text-xs font-medium">Создать</span>
         </button>
         
-        <button class="nav-tab flex flex-col items-center py-2 px-4 rounded-lg transition-all" data-tab="ranking">
+        <button class="nav-tab flex flex-col items-center py-2 px-4 rounded-lg transition-all text-gray-400 hover:text-white" data-tab="ranking">
           <span class="nav-icon text-xl mb-1">🏆</span>
           <span class="text-xs font-medium">Рейтинг</span>
         </button>
         
-        <button class="nav-tab flex flex-col items-center py-2 px-4 rounded-lg transition-all" data-tab="profile">
+        <button class="nav-tab flex flex-col items-center py-2 px-4 rounded-lg transition-all text-gray-400 hover:text-white" data-tab="profile">
           <span class="nav-icon text-xl mb-1">👤</span>
           <span class="text-xs font-medium">Профиль</span>
         </button>

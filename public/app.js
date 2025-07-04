@@ -56,13 +56,15 @@ function switchTab(tabName) {
   
   // Update nav visual state
   document.querySelectorAll('.nav-tab').forEach(tab => {
-    tab.classList.remove('active', 'tab-active');
+    tab.classList.remove('active', 'tab-active', 'text-red-500');
+    tab.classList.add('text-gray-400');
     const icon = tab.querySelector('.nav-icon');
     icon.classList.remove('active');
   });
   
   const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
-  activeTab.classList.add('active', 'tab-active');
+  activeTab.classList.add('active', 'tab-active', 'text-red-500');
+  activeTab.classList.remove('text-gray-400');
   activeTab.querySelector('.nav-icon').classList.add('active');
   
   // Hide all screens
@@ -526,25 +528,33 @@ async function loadRanking() {
       rankingList.innerHTML = `
         <div class="text-center py-8">
           <div class="text-4xl mb-3">🏆</div>
-          <p class="text-gray-600">Пока нет донатов</p>
+          <p class="text-gray-400">Пока нет донатов</p>
         </div>`;
       return;
     }
 
     rankingList.innerHTML = ranking.map((donor, index) => {
-      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}`;
+      const rankBadge = index < 3 ? medal : `<span class="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold text-sm">${index + 1}</span>`;
       
       return `
-        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors slide-up" style="animation-delay: ${index * 0.1}s">
+        <div class="flex items-center justify-between p-4 bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors slide-up border border-gray-700" style="animation-delay: ${index * 0.1}s">
           <div class="flex items-center space-x-4">
-            <span class="text-2xl font-bold w-8">${medal}</span>
+            <div class="w-12 h-12 flex items-center justify-center">
+              <div class="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+                <span class="text-white font-bold text-lg">${(donor.first_name || 'A').charAt(0)}</span>
+              </div>
+            </div>
             <div>
-              <p class="font-semibold text-gray-900">${donor.first_name || 'Аноним'}</p>
-              <p class="text-sm text-gray-500">${donor.donation_count} ${donor.donation_count === 1 ? 'донат' : 'донатов'}</p>
+              <p class="font-semibold text-white">${donor.first_name || 'Аноним'}</p>
+              <p class="text-sm text-gray-400">💰 ${donor.total_amount}</p>
             </div>
           </div>
-          <div class="text-right">
-            <p class="font-bold text-green-600 text-lg">${donor.total_amount} TON</p>
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <p class="font-bold text-yellow-400 text-lg">${donor.donation_count}</p>
+            </div>
+            <div class="text-2xl">${rankBadge}</div>
           </div>
         </div>
       `;
@@ -563,8 +573,8 @@ async function loadProfile() {
     profileContent.innerHTML = `
       <div class="glass-card rounded-2xl p-6 text-center">
         <div class="text-6xl mb-4">👤</div>
-        <p class="text-gray-700 text-lg">Профиль недоступен</p>
-        <p class="text-gray-500">Запустите приложение в Telegram</p>
+        <p class="text-white text-lg">Профиль недоступен</p>
+        <p class="text-gray-400">Запустите приложение в Telegram</p>
       </div>`;
     return;
   }
