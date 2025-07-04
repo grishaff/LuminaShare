@@ -102,17 +102,12 @@ function switchTab(tabName) {
 
 // Info banner logic
 function initInfoBanner() {
-const bannerEl = document.getElementById("infoBanner");
-const closeBannerBtn = document.getElementById("closeBanner");
-  
-if (localStorage.getItem("bannerClosed")) {
-  bannerEl.style.display = "none";
-} else {
-  closeBannerBtn.addEventListener("click", () => {
-    bannerEl.style.display = "none";
-    localStorage.setItem("bannerClosed", "1");
+  const banner = document.getElementById("infoBanner");
+  if (!banner) return;
+
+  banner.addEventListener("click", () => {
+    banner.classList.add("hidden");
   });
-  }
 }
 
 // Image viewer
