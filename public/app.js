@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initImageViewer();
   initCreateForm();
   initConnectWalletModal();
+  initStarsModal();
   
   // Set initial active tab
   switchTab('feed');
@@ -552,7 +553,7 @@ async function loadRanking() {
             </div>
             <div>
               <p class="font-semibold text-white">${donor.first_name || 'Аноним'}</p>
-              <p class="text-sm text-gray-400">💰 ${donor.total_amount}</p>
+              <p class="text-sm text-gray-400">${donor.total_amount_stars ? `⭐ ${donor.total_amount_stars}` : ''}${donor.total_amount_stars && donor.total_amount_ton ? ' • ' : ''}${donor.total_amount_ton ? `${donor.total_amount_ton} TON` : ''}</p>
             </div>
           </div>
           <div class="flex items-center space-x-3">
@@ -811,8 +812,160 @@ function showUserProfile(userId) {
 }
 
 function showDonateModal(announcement) {
-  // This will show donation modal - to be implemented
-  alert(`Донат для "${announcement.title}" будет добавлен после интеграции TON Connect`);
+  if (!tg) {
+    alert("Функция доступна только в Telegram");
+    return;
+  }
+
+  // Показываем выбор количества звезд
+  const options = [
+    { stars: 10, label: "⭐ 10 звезд" },
+    { stars: 50, label: "⭐ 50 звезд" },
+    { stars: 100, label: "⭐ 100 звезд" },
+    { stars: 500, label: "⭐ 500 звезд" },
+    { stars: 1000, label: "⭐ 1000 звезд" }
+  ];
+
+  // Создаем модальное окно для выбора звезд
+  showStarsModal(announcement, options);
+}
+
+// Stars donation functions
+function showStarsModal(announcement, options) {
+  const modal = document.getElementById('starsModal');
+  const titleEl = document.getElementById('starsAnnouncementTitle');
+  const optionsEl = document.getElementById('starsOptions');
+
+  titleEl.textContent = `Поддержать: ${announcement.title}`;
+  
+  // Создаем кнопки для выбора звезд
+  optionsEl.innerHTML = options.map(option => `
+    <button class="stars-option w-full bg-gray-800 hover:bg-gray-700 text-white px-4 py-3 rounded-xl font-semibold transition-colors border border-gray-600" 
+            data-stars="${option.stars}">
+      ${option.label}
+    </button>
+  `).join('');
+
+  // Добавляем обработчики для кнопок звезд
+  optionsEl.querySelectorAll('.stars-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const stars = parseInt(btn.dataset.stars);
+      hideStarsModal();
+      sendStarsDonation(announcement, stars);
+    });
+  });
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function hideStarsModal() {
+  const modal = document.getElementById('starsModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+async function sendStarsDonation(announcement, stars) {
+  try {
+    if (!tg || !tg.initDataUnsafe?.user) {
+      throw new Error("Пользователь не авторизован");
+    }
+
+    console.log(`Sending ${stars} stars for announcement:`, announcement.id);
+
+    // Используем Telegram Payment API для звезд
+    if (tg.openInvoice) {
+      // Создаем инвойс для Telegram Stars
+      const invoice = {
+        title: `Поддержка: ${announcement.title}`,
+        description: `Пожертвование ${stars} звезд`,
+        payload: JSON.stringify({
+          type: 'stars_donation',
+          announcement_id: announcement.id,
+          donor_tg_id: tg.initDataUnsafe.user.id,
+          amount_stars: stars
+        }),
+        provider_token: '', // Для звезд токен не нужен
+        currency: 'XTR', // Telegram Stars currency
+        prices: [{ amount: stars, label: `${stars} звезд` }]
+      };
+
+      // Открываем инвойс
+      tg.openInvoice(invoice.payload, (status) => {
+        console.log('Payment status:', status);
+        if (status === 'paid') {
+          // Платеж успешен, записываем в базу
+          recordStarsDonation(announcement.id, tg.initDataUnsafe.user.id, stars);
+        } else if (status === 'cancelled') {
+          console.log('Payment cancelled by user');
+        } else {
+          console.error('Payment failed:', status);
+        }
+      });
+    } else {
+      // Fallback для тестирования
+      const confirmed = confirm(`Отправить ${stars} звезд для "${announcement.title}"?`);
+      if (confirmed) {
+        await recordStarsDonation(announcement.id, tg.initDataUnsafe.user.id, stars);
+      }
+    }
+  } catch (err) {
+    console.error("Error sending stars donation:", err);
+    if (tg) {
+      tg.showAlert(`Ошибка: ${err.message}`);
+    } else {
+      alert(`Ошибка: ${err.message}`);
+    }
+  }
+}
+
+async function recordStarsDonation(announcementId, donorTgId, amountStars) {
+  try {
+    const resp = await fetch("/api/donate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        announcementId: announcementId,
+        donorTgId: donorTgId,
+        amountStars: amountStars,
+        txHash: `stars_${Date.now()}` // Временный ID для звезд
+      })
+    });
+    
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error);
+    
+    // Показываем успешное сообщение
+    if (tg) {
+      tg.showAlert(`Спасибо! Вы отправили ${amountStars} ⭐ звезд!`);
+    } else {
+      alert(`Спасибо! Вы отправили ${amountStars} ⭐ звезд!`);
+    }
+    
+    // Обновляем данные
+    loadFeed();
+    
+  } catch (err) {
+    console.error("Error recording donation:", err);
+    if (tg) {
+      tg.showAlert(`Ошибка записи доната: ${err.message}`);
+    } else {
+      alert(`Ошибка записи доната: ${err.message}`);
+    }
+  }
+}
+
+function initStarsModal() {
+  const modal = document.getElementById('starsModal');
+  const closeBtn = document.getElementById('closeStarsModal');
+
+  closeBtn.addEventListener('click', hideStarsModal);
+  
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      hideStarsModal();
+    }
+  });
 }
 
 // Wallet connection functions

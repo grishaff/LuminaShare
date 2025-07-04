@@ -9,10 +9,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const { announcementId, donorTgId, amountTon, txHash } = req.body ?? {};
+  const { announcementId, donorTgId, amountTon, amountStars, txHash } = req.body ?? {};
 
-  if (!announcementId || !donorTgId || !amountTon || !txHash) {
-    res.status(400).json({ error: "announcementId, donorTgId, amountTon, txHash are required" });
+  // Поддерживаем и TON и Stars для обратной совместимости
+  const donationAmount = amountStars || amountTon;
+  
+  if (!announcementId || !donorTgId || !donationAmount || !txHash) {
+    res.status(400).json({ error: "announcementId, donorTgId, amount (TON or Stars), txHash are required" });
     return;
   }
 
@@ -29,15 +32,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
   // insert donation
+  const donationData: any = {
+    id: randomUUID(),
+    announcement_id: announcementId,
+    donor_tg_id: donorTgId,
+    tx_hash: txHash,
+  };
+
+  // Добавляем поле в зависимости от типа доната
+  if (amountStars) {
+    donationData.amount_stars = amountStars;
+  } else if (amountTon) {
+    donationData.amount_ton = amountTon;
+  }
+
   const { data, error } = await supabase
     .from("donations")
-    .insert({
-      id: randomUUID(),
-      announcement_id: announcementId,
-      donor_tg_id: donorTgId,
-      amount_ton: amountTon,
-      tx_hash: txHash,
-    })
+    .insert(donationData)
     .select()
     .single();
 

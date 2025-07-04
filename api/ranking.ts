@@ -10,10 +10,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     console.log('Fetching donations...');
-    // получаем все донаты
+    // получаем все донаты (и TON и Stars)
     const { data: donations, error: donationsError } = await supabase
       .from('donations')
-      .select('donor_tg_id, amount_ton');
+      .select('donor_tg_id, amount_ton, amount_stars');
 
     if (donationsError) {
       console.error('Donations error:', donationsError);
@@ -43,30 +43,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     userMap[user.tg_id] = user;
   });
 
-  // Агрегируем данные по donor_tg_id
+  // Агрегируем данные по donor_tg_id (включая звезды)
   const rankings: any = {};
   
   donations?.forEach((donation: any) => {
     const donorId = donation.donor_tg_id;
-    const amount = parseFloat(donation.amount_ton) || 0;
+    const amountTon = parseFloat(donation.amount_ton) || 0;
+    const amountStars = parseFloat(donation.amount_stars) || 0;
     const user = userMap[donorId];
     
     if (rankings[donorId]) {
-      rankings[donorId].total_amount += amount;
+      rankings[donorId].total_amount_ton += amountTon;
+      rankings[donorId].total_amount_stars += amountStars;
       rankings[donorId].donation_count += 1;
     } else {
       rankings[donorId] = {
         donor_tg_id: donorId,
         first_name: user?.display_name || 'Аноним',
-        total_amount: amount,
+        total_amount_ton: amountTon,
+        total_amount_stars: amountStars,
         donation_count: 1
       };
     }
   });
 
-  // Преобразуем в массив и сортируем по сумме
+  // Преобразуем в массив и сортируем по звездам (приоритет), затем по TON
   const rankingArray = Object.values(rankings)
-    .sort((a: any, b: any) => b.total_amount - a.total_amount)
+    .sort((a: any, b: any) => {
+      // Сначала сортируем по звездам, потом по TON
+      if (b.total_amount_stars !== a.total_amount_stars) {
+        return b.total_amount_stars - a.total_amount_stars;
+      }
+      return b.total_amount_ton - a.total_amount_ton;
+    })
     .slice(0, 100);
 
     console.log('Returning ranking with', rankingArray.length, 'entries');
