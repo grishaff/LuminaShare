@@ -36,6 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
   initInfoBanner();
   initImageViewer();
+  initCreateForm();
+  initConnectWalletModal();
+  
+  // Set initial active tab
+  switchTab('feed');
+  
   loadInitialData();
 });
 
@@ -59,13 +65,16 @@ function switchTab(tabName) {
     tab.classList.remove('active', 'tab-active', 'text-red-500');
     tab.classList.add('text-gray-400');
     const icon = tab.querySelector('.nav-icon');
-    icon.classList.remove('active');
+    if (icon) icon.classList.remove('active');
   });
   
   const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
-  activeTab.classList.add('active', 'tab-active', 'text-red-500');
-  activeTab.classList.remove('text-gray-400');
-  activeTab.querySelector('.nav-icon').classList.add('active');
+  if (activeTab) {
+    activeTab.classList.add('active', 'tab-active', 'text-red-500');
+    activeTab.classList.remove('text-gray-400');
+    const activeIcon = activeTab.querySelector('.nav-icon');
+    if (activeIcon) activeIcon.classList.add('active');
+  }
   
   // Hide all screens
   document.querySelectorAll('.screen').forEach(screen => {
@@ -970,7 +979,4 @@ function initConnectWalletModal() {
 }
 
 // Initialize create form when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  initCreateForm();
-  initConnectWalletModal();
-}); 
+// (moved to main DOMContentLoaded above) 
